@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>夸夸清单</title>
+  <!-- 添加到主屏幕的图标和名称 -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌟%3C/text%3E%3C/svg%3E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="夸夸清单">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255,255,250,0.85);
+      backdrop-filter: blur(20px);
+      border-radius: 40px;
+      padding: 30px 25px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 30px 50px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+    h1 { font-size: 2.4rem; margin-bottom: 5px; }
+    .daily-praise-btn {
+      background: #ffb6c1; border: none; padding: 10px 22px; border-radius: 50px;
+      font-size: 1.1rem; font-weight: bold; color: white;
+      box-shadow: 0 10px 20px rgba(255,105,135,0.4); cursor: pointer; margin: 10px 0; transition: all 0.2s;
+    }
+    .daily-praise-btn:hover { transform: scale(1.03); }
+
+    .time-section {
+      background: rgba(255,255,255,0.6); border-radius: 30px; padding: 20px 15px; margin: 15px 0; text-align: left;
+    }
+    .time-section h3 { font-size: 1.2rem; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .category-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+    .cat-btn {
+      border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;
+      color: white; cursor: pointer; transition: all 0.2s; background: #ddd; display: flex; align-items: center; gap: 4px;
+    }
+    .cat-btn.active { outline: 3px solid #fff; transform: scale(1.05); box-shadow: 0 0 12px rgba(0,0,0,0.2); }
+    .timer-display { font-size: 1.4rem; font-weight: bold; margin: 8px 0; color: #555; }
+    .stop-btn {
+      background: #ff7675; border: none; color: white; border-radius: 20px; padding: 8px 18px;
+      font-weight: bold; cursor: pointer; margin-left: 10px;
+    }
+    .log-list { list-style: none; max-height: 180px; overflow-y: auto; margin-top: 10px; font-size: 0.85rem; }
+    .log-item {
+      display: flex; justify-content: space-between; align-items: center; background: white;
+      padding: 6px 12px; border-radius: 12px; margin-bottom: 5px;
+    }
+    .log-item span { color: #444; }
+    .delete-log { background: none; border: none; font-size: 1rem; cursor: pointer; color: #ccc; }
+    .delete-log:hover { color: #e74c3c; }
+
+    .task-input-area { display: flex; gap: 10px; margin: 18px 0; }
+    .task-input-area input {
+      flex:1; padding: 14px 18px; border: 2px solid #ffe4c4; border-radius: 30px; font-size: 1rem; outline: none; background: white;
+    }
+    .task-input-area button {
+      background: #ff9a9e; border: none; color: white; border-radius: 30px; padding: 0 25px;
+      font-weight: bold; font-size: 1.3rem; cursor: pointer;
+    }
+    ul#taskList { list-style: none; margin-top: 10px; }
+    li {
+      background: white; border-radius: 20px; padding: 10px 16px; margin-bottom: 8px;
+      display: flex; align-items: center; justify-content: space-between; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    li.completed { opacity: 0.7; background: #f0f0f0; }
+    .task-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .checkbox { width: 22px; height: 22px; accent-color: #ff7f7f; transform: scale(1.2); cursor: pointer; }
+    .task-text { font-size: 1.05rem; word-break: break-word; }
+    .completed .task-text { text-decoration: line-through; color: #888; }
+    .delete-btn { background: none; border: none; font-size: 1.4rem; color: #ccc; cursor: pointer; }
+    .delete-btn:hover { color: #ff6b6b; }
+
+    .action-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+    .review-btn, .growth-btn, .reflect-btn {
+      border: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; color: white;
+      cursor: pointer; font-size: 0.95rem; box-shadow: 0 8px 18px rgba(0,0,0,0.2); transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .review-btn { background: #a29bfe; }
+    .growth-btn { background: #74b9ff; }
+    .reflect-btn { background: #fdcb6e; color: #333; }
+    .review-btn:hover, .growth-btn:hover, .reflect-btn:hover { transform: scale(1.03); }
+
+    .modal {
+      position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px);
+    }
+    .modal-content {
+      background: white; border-radius: 40px; padding: 25px 20px; text-align: center;
+      max-width: 360px; animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    }
+    @keyframes pop { from { transform: scale(0.5); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .modal-emoji { font-size: 3.5rem; }
+    .modal-text { font-size: 1.3rem; margin: 15px 0; color: #d2696c; line-height: 1.4; }
+    .close-modal {
+      background: #ffb6c1; border: none; color: white; padding: 10px 28px; border-radius: 40px; font-size: 1rem; cursor: pointer; margin-top: 10px;
+    }
+
+    .float-praise {
+      position: fixed; font-weight: bold; color: #ff5e7e; animation: floatUp 2s ease-out forwards;
+      z-index: 999; font-size: 1.6rem; pointer-events: none;
+    }
+    @keyframes floatUp {
+      0% { opacity:1; transform: translateY(0) scale(1); }
+      100% { opacity:0; transform: translateY(-120px) scale(1.2); }
+    }
+    canvas#confetti { position: fixed; top:0; left:0; pointer-events: none; z-index: 1000; }
+
+    .time-stats { margin: 15px 0; text-align: left; }
+    .stat-bar { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
+    .stat-bar .emoji { width: 28px; }
+    .stat-bar .bar-bg { flex: 1; height: 10px; background: #eee; border-radius: 10px; margin: 0 10px; overflow: hidden; }
+    .stat-bar .bar-fill { height: 100%; border-radius: 10px; }
+
+    .range-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; justify-content: center; }
+    .range-btn {
+      background: #eee; border: none; padding: 6px 14px; border-radius: 15px; font-size: 0.85rem;
+      font-weight: bold; cursor: pointer; transition: 0.2s;
+    }
+    .range-btn.active { background: #74b9ff; color: white; }
+    canvas#growthCanvas { width: 100%; height: auto; border-radius: 20px; margin-top: 10px; }
+    .summary-text { font-size: 0.9rem; color: #555; margin: 10px 0; }
+    
+    .reason-btn {
+      display: block; width: 100%; background: #f5f5f5; border: none; padding: 12px; margin: 6px 0;
+      border-radius: 15px; font-size: 0.95rem; cursor: pointer; text-align: left; transition: 0.2s;
+    }
+    .reason-btn:hover { background: #ffe0e0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌟夸夸清单</h1>
+    <button class="daily-praise-btn" id="showDailyBtn">📜 查看今日夸夸</button>
+
+    <div class="time-section">
+      <h3>⏱️ 时间记录</h3>
+      <div class="category-buttons" id="catButtons"></div>
+      <div class="timer-display" id="timerDisplay">选择活动开始计时</div>
+      <button class="stop-btn" id="stopTimerBtn" style="display:none;">⏹️ 停止</button>
+      <ul class="log-list" id="logList"></ul>
+    </div>
+
+    <div class="task-input-area">
+      <input type="text" id="taskInput" placeholder="写下今天要做的事...">
+      <button id="addTaskBtn">➕</button>
+    </div>
+    <ul id="taskList"></ul>
+
+    <div class="action-buttons">
+      <button class="review-btn" id="reviewBtn">✨ 今日复盘</button>
+      <button class="growth-btn" id="growthBtn">📈 成长曲线</button>
+      <button class="reflect-btn" id="reflectBtn">📝 未完成反思</button>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+  <script>
+    // ========== 工具函数 ==========
+    const getTodayStr = () => new Date().toISOString().split('T')[0];
+    function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function playDing() {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+    }
+
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let particles = [];
+    function launchConfetti() {
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          x: Math.random() * canvas.width, y: Math.random() * canvas.height * 0.5,
+          vx: (Math.random() - 0.5) * 6, vy: Math.random() * 3 + 2,
+          size: Math.random() * 8 + 4,
+          color: `hsl(${Math.random() * 60 + 340}, 80%, 70%)`,
+        });
+      }
+    }
+    function animateConfetti() {
+      if (particles.length === 0) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles = particles.filter(p => p.y < canvas.height + 20);
+      particles.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 2*Math.PI);
+        ctx.fillStyle = p.color; ctx.fill();
+        p.x += p.vx; p.y += p.vy; p.vy += 0.15;
+      });
+      requestAnimationFrame(animateConfetti);
+    }
+    animateConfetti();
+
+    function showFloatingPraise(text) {
+      const el = document.createElement('div');
+      el.className = 'float-praise';
+      el.textContent = text;
+      el.style.left = Math.random() * 60 + 20 + '%';
+      el.style.top = '60%';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2000);
+    }
+
+    // ========== 通知权限 & 提醒逻辑 ==========
+    let notificationPermission = false;
+    function requestNotificationPermission() {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "granted") {
+        notificationPermission = true;
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") notificationPermission = true;
+        });
+      }
+    }
+
+    function sendNotification(title, body) {
+      if (notificationPermission) {
+        new Notification(title, { body, icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Ctext y=".9em" font-size="90"%3E🌟%3C/text%3E%3C/svg%3E' });
+      } else {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-content"><div class="modal-emoji">⏰</div><div class="modal-text">${title}<br><small>${body}</small></div><button class="close-modal">知道了</button></div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+      }
+    }
+
+    const EVENING_REMIND_KEY = 'evening_remind_date';
+    function checkEveningReminder() {
+      const now = new Date();
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+      if (hour > 22 || (hour === 22 && minute >= 30)) {
+        const lastRemind = localStorage.getItem(EVENING_REMIND_KEY);
+        if (lastRemind !== getTodayStr()) {
+          const unfinished = tasks.filter(t => !t.completed);
+          if (unfinished.length > 0) {
+            sendNotification(
+              '🌙 晚间提醒',
+              `已经晚上10:30了，还有 ${unfinished.length} 个任务没完成。记得温柔地对待自己，不必勉强，但也别轻易放弃。`
+            );
+            localStorage.setItem(EVENING_REMIND_KEY, getTodayStr());
+          }
+        }
+      }
+    }
+
+    const TASK_REMIND_KEY = 'task_remind_ids';
+    function checkTaskOverdueReminders() {
+      let remindedTasks = [];
+      const stored = localStorage.getItem(TASK_REMIND_KEY);
+      if (stored) { try { remindedTasks = JSON.parse(stored); } catch(e) {} }
+      const now = Date.now();
+      let updated = false;
+      tasks.forEach(task => {
+        if (!task.completed && task.addedAt) {
+          if ((now - task.addedAt) >= 2 * 60 * 60 * 1000) {
+            if (!remindedTasks.includes(task.id)) {
+              sendNotification(
+                '⏳ 任务延期',
+                `任务“${task.text}”已经超过2小时了，是时候看看它了。迈出第一步，剩下的交给惯性。`
+              );
+              remindedTasks.push(task.id);
+              updated = true;
+            }
+          }
+        }
+      });
+      if (updated) localStorage.setItem(TASK_REMIND_KEY, JSON.stringify(remindedTasks));
+    }
+
+    function runReminders() {
+      checkEveningReminder();
+      checkTaskOverdueReminders();
+    }
+
+    // ========== 夸夸语库 ==========
+    const dailyPraises = [
+      "我的存在本身就是一件很美好的事。","请保持那份热爱，奔赴下一场山海。","只有先爱自己，世界才会爱你。",
+      "一旦你从心里接纳了自己的弱点，就再也没有人可以用这个事情伤害你。","淡然，是人生的一种成长。别让生活的压力挤走快乐，收拾情绪，重新上路。",
+      "即使身处暗流，也要仰望星空啊。","人间一趟，积极向上，不念过往，不畏将来。","黑夜无论怎样悠长，白昼总会到来！昨天终将过去，明日灿烂依然！",
+      "发光不是太阳的权利，每个人都可以。","陪你到最后的那个人，只有你自己，你就是自己的神。","我值得这世间，所有的美好。",
+      "心若有所向往，何惧道阻且长。","在这样的时刻，我们需要耐心等待，满怀信心地去期待，相信，生活不会放弃你，命运不会抛弃你。如果你耐不住寂寞，就看不到繁华。",
+      "生活不是等着暴风雨过去，而是学会在风雨中跳舞。","如果事与愿违，就相信上帝一定另有安排。","明镜照物，不将不迎。","万物皆备于我矣。","与万物同体，与天地共流。"
+    ];
+    const taskCompletePraises = [
+      "如今我努力奔跑，不过是为了追上那个曾经被寄予厚望的自己。","星光不问赶路人，时光不负有心人。",
+      "把努力当成一种习惯，而不是三分钟热度。坚持才是王道。","就算步子很小，也要一步步前进。","凡自强不息者，终将得到救赎。",
+      "阻碍你的，是恐惧和优柔寡断，你得相信自己，往前走吧。","努力过后，才知道许多事情，坚持坚持，就过来了。",
+      "真正在努力的，日子是不会舒服的。把自己变优秀，其他的事情自然就会跟着好起来。","捂住你的耳朵，专注于面前的事，不要受干扰，不要想结果。",
+      "当你觉得什么都没意思的时候你就学习，学起习来身边的任何东西都变得有趣了。","凭时间赢来的东西，时间肯定会为之作证。",
+      "命运不会亏待正在努力变好的我。","我能接受失败，但我不能接受放弃。","不要沉醉于过去，不要遐想于未来，专注于即将流逝的现在。"
+    ];
+    const praiseMap = {
+      '工作': `今天你把最多的精力给了工作。命运不会亏待正在努力变好的你，凭时间赢来的东西，时间肯定会为之作证。`,
+      '学习': `你今天沉浸在学习中。如今你努力奔跑，不过是为了追上那个曾经被寄予厚望的自己。星光不问赶路人，时光不负有心人。`,
+      '休息': `你今天把时间用在了休息上。如果你累了，学会休息，而不是放弃。糟糕的日子往往有特别的价值，但前提是你要挺过去。`,
+      '运动': `你用汗水浇灌身体。真正在努力的，日子是不会舒服的。把自己变优秀，其他的事情自然就会跟着好起来。`,
+      '娱乐': `你给了自己纯粹的快乐时光。别让生活的压力挤走快乐，收拾情绪，重新上路。会玩的人，才有力气面对生活的严肃。`,
+      '其他': `今天你在“其他”事情上投入了时间。生活不只有主线任务，这些碎片时间同样构成了真实的你。`
+    };
+
+    // ========== 每日夸夸弹窗 ==========
+    const PRAISE_DATE_KEY = 'praise_last_date';
+    function shouldShowDailyPraise() {
+      return localStorage.getItem(PRAISE_DATE_KEY) !== getTodayStr();
+    }
+    function markDailyPraiseShown() {
+      localStorage.setItem(PRAISE_DATE_KEY, getTodayStr());
+    }
+    function showDailyModal() {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `<div class="modal-content"><div class="modal-emoji">🥰</div><div class="modal-text">${randomItem(dailyPraises)}</div><button class="close-modal">收下这份温暖 💖</button></div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('.close-modal').addEventListener('click', () => { modal.remove(); markDailyPraiseShown(); });
+    }
+    if (shouldShowDailyPraise()) setTimeout(showDailyModal, 600);
+    document.getElementById('showDailyBtn').addEventListener('click', showDailyModal);
+
+    // ========== 待办清单逻辑 ==========
+    const TASKS_KEY = 'daily_tasks';
+    let tasks = [];
+    function loadTasks() {
+      const stored = localStorage.getItem(TASKS_KEY);
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          tasks = data.date === getTodayStr() ? data.items : [];
+        } catch(e) { tasks = []; }
+      }
+    }
+    function saveTasks() {
+      localStorage.setItem(TASKS_KEY, JSON.stringify({ date: getTodayStr(), items: tasks }));
+      const reminded = JSON.parse(localStorage.getItem(TASK_REMIND_KEY) || '[]');
+      const existingIds = tasks.map(t => t.id);
+      const filtered = reminded.filter(id => existingIds.includes(id));
+      if (filtered.length !== reminded.length) {
+        localStorage.setItem(TASK_REMIND_KEY, JSON.stringify(filtered));
+      }
+    }
+    function renderTasks() {
+      const list = document.getElementById('taskList');
+      list.innerHTML = '';
+      tasks.forEach((task, idx) => {
+        const li = document.createElement('li');
+        li.className = task.completed ? 'completed' : '';
+        li.innerHTML = `<div class="task-left"><input type="checkbox" class="checkbox" ${task.completed ? 'checked' : ''} data-index="${idx}"><span class="task-text">${escapeHtml(task.text)}</span></div><button class="delete-btn" data-index="${idx}">🗑️</button>`;
+        list.appendChild(li);
+      });
+      document.querySelectorAll('.checkbox').forEach(cb => {
+        cb.addEventListener('change', function(e) {
+          const idx = +this.dataset.index;
+          tasks[idx].completed = this.checked;
+          if (this.checked) {
+            playDing();
+            launchConfetti();
+            showFloatingPraise(randomItem(taskCompletePraises));
+          }
+          saveTasks();
+          renderTasks();
+        });
+      });
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          tasks.splice(+this.dataset.index, 1);
+          saveTasks();
+          renderTasks();
+        });
+      });
+    }
+    function escapeHtml(text) { return String(text).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
+    document.getElementById('addTaskBtn').addEventListener('click', () => {
+      const input = document.getElementById('taskInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const newTask = {
+        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        text,
+        completed: false,
+        addedAt: Date.now()
+      };
+      tasks.push(newTask);
+      input.value = '';
+      saveTasks();
+      renderTasks();
+    });
+    document.getElementById('taskInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('addTaskBtn').click(); });
+
+    // ========== 时间追踪模块 ==========
+    const categories = [
+      { name: '工作', emoji: '💻', color: '#a29bfe' },
+      { name: '学习', emoji: '📖', color: '#74b9ff' },
+      { name: '休息', emoji: '🧘', color: '#55efc4' },
+      { name: '运动', emoji: '🏃', color: '#fd79a8' },
+      { name: '娱乐', emoji: '🎮', color: '#fdcb6e' },
+      { name: '其他', emoji: '📌', color: '#b2bec3' }
+    ];
+
+    const TIME_LOG_KEY = 'time_log';
+    const TIME_HISTORY_KEY = 'time_history';
+    const REFLECTION_KEY = 'daily_reflections';
+    let currentTimer = null;
+    let timerInterval = null;
+
+    function getTodayLogs() {
+      const stored = localStorage.getItem(TIME_LOG_KEY);
+      if (stored) { try { const data = JSON.parse(stored); return data.date === getTodayStr() ? data.logs : []; } catch(e) { return []; } }
+      return [];
+    }
+    function saveTodayLogs(logs) {
+      localStorage.setItem(TIME_LOG_KEY, JSON.stringify({ date: getTodayStr(), logs }));
+    }
+    function getHistoryLogs() {
+      const stored = localStorage.getItem(TIME_HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    }
+    function saveHistoryLogs(dateStr, logs) {
+      const history = getHistoryLogs();
+      const existingIndex = history.findIndex(entry => entry.date === dateStr);
+      if (existingIndex >= 0) {
+        history[existingIndex].logs = logs;
+      } else {
+        history.push({ date: dateStr, logs });
+      }
+      localStorage.setItem(TIME_HISTORY_KEY, JSON.stringify(history));
+    }
+    function saveReflection(reflection) {
+      const stored = localStorage.getItem(REFLECTION_KEY);
+      const reflections = stored ? JSON.parse(stored) : [];
+      reflections.push(reflection);
+      localStorage.setItem(REFLECTION_KEY, JSON.stringify(reflections));
+    }
+
+    function renderCategoryButtons() {
+      const container = document.getElementById('catButtons');
+      container.innerHTML = '';
+      categories.forEach((cat, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn';
+        btn.style.backgroundColor = cat.color;
+        btn.innerHTML = `${cat.emoji} ${cat.name}`;
+        btn.addEventListener('click', () => startTimer(idx));
+        container.appendChild(btn);
+      });
+    }
+
+    function startTimer(catIndex) {
+      if (currentTimer) stopTimer();
+      currentTimer = { categoryIndex: catIndex, startTime: Date.now() };
+      document.querySelectorAll('.cat-btn').forEach((btn, i) => { btn.classList.toggle('active', i === catIndex); });
+      document.getElementById('stopTimerBtn').style.display = 'inline-block';
+      updateTimerDisplay();
+      timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    function stopTimer() {
+      if (!currentTimer) return;
+      const endTime = Date.now();
+      const log = {
+        category: currentTimer.categoryIndex,
+        start: currentTimer.startTime,
+        end: endTime,
+        duration: Math.floor((endTime - currentTimer.startTime) / 1000)
+      };
+      const logs = getTodayLogs();
+      logs.push(log);
+      saveTodayLogs(logs);
+      saveHistoryLogs(getTodayStr(), logs);
+      
+      currentTimer = null;
+      clearInterval(timerInterval);
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('stopTimerBtn').style.display = 'none';
+      document.getElementById('timerDisplay').textContent = '选择活动开始计时';
+      renderLogs();
+    }
+
+    function updateTimerDisplay() {
+      if (!currentTimer) return;
+      const elapsed = Math.floor((Date.now() - currentTimer.startTime) / 1000);
+      const hrs = Math.floor(elapsed / 3600);
+      const mins = Math.floor((elapsed % 3600) / 60);
+      const secs = elapsed % 60;
+      document.getElementById('timerDisplay').textContent = 
+        `⏳ ${categories[currentTimer.categoryIndex].emoji} 计时中 ${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+    }
+
+    function formatDuration(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      if (h > 0) return `${h}h ${m}m`;
+      return `${m}分`;
+    }
+    function formatTime(ts) { return new Date(ts).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' }); }
+
+    function renderLogs() {
+      const logs = getTodayLogs();
+      const list = document.getElementById('logList');
+      list.innerHTML = '';
+      if (logs.length === 0) { list.innerHTML = '<div style="color:#aaa; text-align:center;">暂无记录，开始计时吧</div>'; return; }
+      logs.forEach((log, idx) => {
+        const cat = categories[log.category];
+        const li = document.createElement('li');
+        li.className = 'log-item';
+        li.innerHTML = `<span>${cat.emoji} ${cat.name} &nbsp; ${formatTime(log.start)} - ${formatTime(log.end)} &nbsp; (${formatDuration(log.duration)})</span><button class="delete-log" data-index="${idx}">🗑️</button>`;
+        list.appendChild(li);
+      });
+      document.querySelectorAll('.delete-log').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          const idx = +this.dataset.index;
+          let logs = getTodayLogs();
+          logs.splice(idx, 1);
+          saveTodayLogs(logs);
+          saveHistoryLogs(getTodayStr(), logs);
+          renderLogs();
+        });
+      });
+    }
+
+    document.getElementById('stopTimerBtn').addEventListener('click', stopTimer);
+
+    // ========== 今日复盘 ==========
+    function generateReviewData() {
+      const logs = getTodayLogs();
+      const catDurations = {};
+      logs.forEach(log => { catDurations[log.category] = (catDurations[log.category] || 0) + log.duration; });
+      return catDurations;
+    }
+    function generateReviewPraise(catDurations) {
+      if (Object.keys(catDurations).length === 0) return "今天还没有时间记录。但请记得：我的存在本身就是一件很美好的事。不必苛求每一天都完美，尽力而为，就问心无愧。";
+      let maxCatIdx = null, maxTime = 0;
+      for (let [cat, time] of Object.entries(catDurations)) { if (time > maxTime) { maxTime = time; maxCatIdx = +cat; } }
+      const cat = categories[maxCatIdx];
+      const hrs = Math.floor(maxTime / 3600);
+      const mins = Math.floor((maxTime % 3600) / 60);
+      const timeStr = hrs > 0 ? `${hrs}小时${mins}分钟` : `${mins}分钟`;
+      return praiseMap[cat.name] || randomItem([
+        `今天你在${cat.name}上投入了${timeStr}。凡自强不息者，终将得到救赎。`,
+        `${timeStr}的${cat.name}时光。人生最精彩的不是成功的那一瞬间，而是回头看，那段漆黑看似没有尽头、苦苦摸索的过程。`
+      ]);
+    }
+    function showReviewModal() {
+      const catDurations = generateReviewData();
+      const praise = generateReviewPraise(catDurations);
+      let statsHtml = '';
+      const totalSeconds = Object.values(catDurations).reduce((a,b) => a+b, 0);
+      categories.forEach((cat, idx) => {
+        const sec = catDurations[idx] || 0;
+        const percent = totalSeconds > 0 ? (sec / totalSeconds * 100).toFixed(1) : 0;
+        statsHtml += `<div class="stat-bar"><span class="emoji">${cat.emoji}</span><span style="width:40px; font-size:0.8rem;">${formatDuration(sec)}</span><div class="bar-bg"><div class="bar-fill" style="width:${percent}%; background:${cat.color};"></div></div></div>`;
+      });
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `<div class="modal-content" style="max-width:360px;"><div class="modal-emoji">📊</div><div class="modal-text" style="font-size:1.2rem;">${praise}</div><div class="time-stats">${statsHtml}</div><button class="close-modal">好的，继续加油 💪</button></div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+    }
+    document.getElementById('reviewBtn').addEventListener('click', showReviewModal);
+
+    // ========== 成长曲线模块 ==========
+    function getDateRange(type) {
+      const today = new Date();
+      const dates = [];
+      let start = new Date(today);
+      if (type === 'week') {
+        const day = today.getDay() || 7;
+        start.setDate(today.getDate() - day + 1);
+      } else if (type === 'month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+      } else if (type === 'quarter') {
+        const quarterMonth = Math.floor(today.getMonth() / 3) * 3;
+        start = new Date(today.getFullYear(), quarterMonth, 1);
+      } else if (type === 'half') {
+        start.setDate(today.getDate() - 182);
+      } else if (type === 'year') {
+        start = new Date(today.getFullYear(), 0, 1);
+      }
+      while (start <= today) {
+        dates.push(new Date(start).toISOString().split('T')[0]);
+        start.setDate(start.getDate() + 1);
+      }
+      return dates;
+    }
+
+    function drawGrowthChart(rangeType) {
+      const dates = getDateRange(rangeType);
+      const history = getHistoryLogs();
+      const dataByDate = {};
+      dates.forEach(d => { dataByDate[d] = {}; categories.forEach((_, i) => dataByDate[d][i] = 0); });
+      history.forEach(entry => {
+        if (dataByDate[entry.date]) {
+          entry.logs.forEach(log => {
+            dataByDate[entry.date][log.category] = (dataByDate[entry.date][log.category] || 0) + log.duration;
+          });
+        }
+      });
+
+      const canvas = document.getElementById('growthCanvas');
+      const container = canvas.parentNode;
+      canvas.width = container.clientWidth - 20;
+      canvas.height = 220;
+      const c = canvas.getContext('2d');
+      c.clearRect(0, 0, canvas.width, canvas.height);
+      if (dates.length === 0) return;
+
+      const padding = { top: 20, right: 20, bottom: 40, left: 40 };
+      const chartWidth = canvas.width - padding.left - padding.right;
+      const chartHeight = canvas.height - padding.top - padding.bottom;
+      let maxDuration = 0;
+      dates.forEach(date => {
+        categories.forEach((_, i) => { maxDuration = Math.max(maxDuration, dataByDate[date][i]); });
+      });
+      maxDuration = Math.ceil(maxDuration / 600) * 600;
+      if (maxDuration === 0) maxDuration = 600;
+
+      c.strokeStyle = '#ccc';
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(padding.left, padding.top);
+      c.lineTo(padding.left, canvas.height - padding.bottom);
+      c.lineTo(canvas.width - padding.right, canvas.height - padding.bottom);
+      c.stroke();
+
+      c.fillStyle = '#888';
+      c.font = '10px sans-serif';
+      c.textAlign = 'right';
+      const ySteps = 4;
+      for (let i = 0; i <= ySteps; i++) {
+        const y = padding.top + (chartHeight / ySteps) * i;
+        const val = Math.round(maxDuration - (maxDuration / ySteps) * i);
+        c.fillText(val + '秒', padding.left - 5, y + 3);
+        if (i > 0) {
+          c.strokeStyle = '#eee';
+          c.beginPath();
+          c.moveTo(padding.left, y);
+          c.lineTo(canvas.width - padding.right, y);
+          c.stroke();
+        }
+      }
+
+      c.fillStyle = '#888';
+      c.textAlign = 'center';
+      const step = Math.max(1, Math.floor(dates.length / 6));
+      dates.forEach((date, idx) => {
+        if (idx % step === 0 || idx === dates.length - 1) {
+          const x = padding.left + (chartWidth / (dates.length - 1)) * idx;
+          c.fillText(date.slice(5), x, canvas.height - padding.bottom + 15);
+        }
+      });
+
+      categories.forEach((cat, catIdx) => {
+        c.strokeStyle = cat.color;
+        c.lineWidth = 2;
+        c.beginPath();
+        dates.forEach((date, idx) => {
+          const x = padding.left + (chartWidth / (dates.length - 1)) * idx;
+          const y = padding.top + chartHeight - (dataByDate[date][catIdx] / maxDuration) * chartHeight;
+          if (idx === 0) c.moveTo(x, y);
+          else c.lineTo(x, y);
+        });
+        c.stroke();
+        const legendX = padding.left + 10 + catIdx * 50;
+        c.fillStyle = cat.color;
+        c.fillRect(legendX, 5, 10, 10);
+        c.fillStyle = '#333';
+        c.font = '9px sans-serif';
+        c.fillText(cat.emoji, legendX + 12, 13);
+      });
+
+      let totalSeconds = 0;
+      dates.forEach(date => { categories.forEach((_, i) => totalSeconds += dataByDate[date][i]); });
+      const avgSeconds = Math.round(totalSeconds / dates.length);
+      document.getElementById('summaryText').textContent = 
+        `总时长：${formatDuration(totalSeconds)} | 日均：${formatDuration(avgSeconds)}`;
+    }
+
+    function showGrowthModal() {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width:400px;">
+          <div class="modal-emoji">📈</div>
+          <div style="font-weight:bold; margin-bottom:10px;">成长曲线</div>
+          <div class="range-buttons" id="rangeButtons">
+            <button class="range-btn active" data-range="week">本周</button>
+            <button class="range-btn" data-range="month">本月</button>
+            <button class="range-btn" data-range="quarter">本季度</button>
+            <button class="range-btn" data-range="half">半年</button>
+            <button class="range-btn" data-range="year">今年</button>
+          </div>
+          <canvas id="growthCanvas" style="width:100%; height:220px;"></canvas>
+          <div class="summary-text" id="summaryText"></div>
+          <button class="close-modal" style="margin-top:10px;">返回</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      let currentRange = 'week';
+      function updateChart(range) {
+        currentRange = range;
+        modal.querySelectorAll('.range-btn').forEach(btn => btn.classList.remove('active'));
+        modal.querySelector(`[data-range="${range}"]`).classList.add('active');
+        drawGrowthChart(range);
+      }
+      modal.querySelectorAll('.range-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => updateChart(e.target.dataset.range));
+      });
+      modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+      setTimeout(() => drawGrowthChart('week'), 100);
+    }
+    document.getElementById('growthBtn').addEventListener('click', showGrowthModal);
+
+    // ========== 未完成反思模块 ==========
+    function getUnfinishedTasks() {
+      return tasks.filter(t => !t.completed);
+    }
+
+    function showReflectModal() {
+      const unfinished = getUnfinishedTasks();
+      if (unfinished.length === 0) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <div class="modal-emoji">🎉</div>
+            <div class="modal-text">今天的任务都完成了！<br>你太了不起了！</div>
+            <button class="close-modal">收下赞美 💖</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        return;
+      }
+
+      let taskListHtml = '<ul style="text-align:left; margin:10px 0;">';
+      unfinished.forEach(task => {
+        taskListHtml += `<li style="background:#fff3f3; margin:5px 0; padding:5px 10px; border-radius:10px;">📌 ${escapeHtml(task.text)}</li>`;
+      });
+      taskListHtml += '</ul>';
+
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width:380px;">
+          <div class="modal-emoji">🤔</div>
+          <div class="modal-text" style="font-size:1.1rem;">这些事还没做，不想动的原因是什么？</div>
+          ${taskListHtml}
+          <button class="reason-btn" data-reason="too_much">📋 今日任务太多了</button>
+          <button class="reason-btn" data-reason="special">💔 特殊原因（身体/突发事情）</button>
+          <button class="reason-btn" data-reason="lazy">😴 就是单纯自己不想做</button>
+          <button class="close-modal" style="margin-top:8px;">先不想了</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      const feedbackMessages = {
+        too_much: "任务确实有点多，不是你懒，是计划可以更温柔。明天少安排一点，或者把任务拆得更小试试。你已经很负责了。",
+        special: "特殊状况谁都会遇到，这不是你的问题。先照顾好自己，等状态好了再补上，没关系的。",
+        lazy: "偶尔不想做太正常了，我也经常这样。不过，我们可以试着只做5分钟，只要开始，就已经赢了。迈出一小步，剩下的交给惯性吧。"
+      };
+
+      const handleReasonClick = (reason) => {
+        const reflection = {
+          date: getTodayStr(),
+          reason: reason,
+          unfinishedTasks: unfinished.map(t => t.text),
+          timestamp: new Date().toISOString()
+        };
+        saveReflection(reflection);
+        
+        modal.remove();
+        const feedbackModal = document.createElement('div');
+        feedbackModal.className = 'modal';
+        feedbackModal.innerHTML = `
+          <div class="modal-content">
+            <div class="modal-emoji">💬</div>
+            <div class="modal-text" style="font-size:1.1rem;">${feedbackMessages[reason]}</div>
+            <button class="close-modal">好的，我明白了 🌱</button>
+          </div>
+        `;
+        document.body.appendChild(feedbackModal);
+        feedbackModal.querySelector('.close-modal').addEventListener('click', () => feedbackModal.remove());
+      };
+
+      modal.querySelectorAll('.reason-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          handleReasonClick(e.target.dataset.reason);
+        });
+      });
+
+      modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+    }
+
+    document.getElementById('reflectBtn').addEventListener('click', showReflectModal);
+
+    // ========== 初始化 ==========
+    requestNotificationPermission();
+    renderCategoryButtons();
+    renderLogs();
+    loadTasks();
+    renderTasks();
+
+    setInterval(runReminders, 60000);
+    setTimeout(runReminders, 2000);
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
