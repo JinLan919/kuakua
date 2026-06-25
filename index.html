@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>夸夸清单</title>
-  <!-- 添加到主屏幕的图标和名称 -->
   <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23FFB6C1' rx='36'/%3E%3Cpath d='M90 25 L105 70 L150 70 L113 95 L127 140 L90 115 L53 140 L67 95 L30 70 L75 70 Z' fill='white'/%3E%3C/svg%3E">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -140,6 +139,17 @@
       border-radius: 15px; font-size: 0.95rem; cursor: pointer; text-align: left; transition: 0.2s;
     }
     .reason-btn:hover { background: #ffe0e0; }
+    
+    /* 子选项按钮样式 */
+    .sub-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 15px; }
+    .sub-btn {
+      background: #f0f0f0; border: 2px solid #ddd; padding: 8px 16px; border-radius: 20px;
+      font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+    }
+    .sub-btn:hover { background: #ffe0e0; border-color: #ffb6c1; }
+    .custom-input-area { display: flex; gap: 8px; margin-top: 15px; }
+    .custom-input-area input { flex: 1; padding: 8px 12px; border-radius: 15px; border: 2px solid #ddd; font-size: 0.9rem; }
+    .custom-input-area button { padding: 8px 16px; border-radius: 15px; border: none; background: #a29bfe; color: white; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -410,20 +420,56 @@
     });
     document.getElementById('taskInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('addTaskBtn').click(); });
 
-    // ========== 时间追踪模块 ==========
+    // ========== 时间追踪模块（含子选项）==========
     const categories = [
-      { name: '工作', emoji: '💻', color: '#a29bfe' },
-      { name: '学习', emoji: '📖', color: '#74b9ff' },
-      { name: '休息', emoji: '🧘', color: '#55efc4' },
-      { name: '运动', emoji: '🏃', color: '#fd79a8' },
-      { name: '娱乐', emoji: '🎮', color: '#fdcb6e' },
-      { name: '其他', emoji: '📌', color: '#b2bec3' }
+      { 
+        name: '工作', emoji: '💻', color: '#a29bfe',
+        subcategories: []  // 无子选项，点击后直接开始计时
+      },
+      { 
+        name: '学习', emoji: '📖', color: '#74b9ff',
+        subcategories: [
+          { name: '读书', emoji: '📚' },
+          { name: '专业领域视频学习', emoji: '🎥' },
+          { name: '化妆学习', emoji: '💄' },
+          { name: '弹钢琴', emoji: '🎹' },
+          { name: '其他技能学习', emoji: '✨', custom: true }
+        ]
+      },
+      { 
+        name: '休息', emoji: '🧘', color: '#55efc4',
+        subcategories: [
+          { name: '午休休息', emoji: '😴' },
+          { name: '晚上睡觉休息', emoji: '🌙' }
+        ]
+      },
+      { 
+        name: '运动', emoji: '🏃', color: '#fd79a8',
+        subcategories: [
+          { name: '散步', emoji: '🚶' },
+          { name: '跳舞', emoji: '💃' }
+        ]
+      },
+      { 
+        name: '娱乐', emoji: '🎮', color: '#fdcb6e',
+        subcategories: [
+          { name: '刷视频', emoji: '📱' },
+          { name: '旅游', emoji: '✈️' }
+        ]
+      },
+      { 
+        name: '其他', emoji: '📌', color: '#b2bec3',
+        subcategories: [
+          { name: '上下班通勤', emoji: '🚌' },
+          { name: '其他自定义', emoji: '🔖', custom: true }
+        ]
+      }
     ];
 
     const TIME_LOG_KEY = 'time_log';
     const TIME_HISTORY_KEY = 'time_history';
     const REFLECTION_KEY = 'daily_reflections';
-    let currentTimer = null;
+    let currentTimer = null;  // 结构: { categoryIndex, subcategory: {name, emoji}, startTime }
     let timerInterval = null;
 
     function getTodayLogs() {
@@ -455,6 +501,7 @@
       localStorage.setItem(REFLECTION_KEY, JSON.stringify(reflections));
     }
 
+    // 渲染主类别按钮
     function renderCategoryButtons() {
       const container = document.getElementById('catButtons');
       container.innerHTML = '';
@@ -463,15 +510,85 @@
         btn.className = 'cat-btn';
         btn.style.backgroundColor = cat.color;
         btn.innerHTML = `${cat.emoji} ${cat.name}`;
-        btn.addEventListener('click', () => startTimer(idx));
+        btn.addEventListener('click', () => {
+          if (cat.subcategories.length === 0) {
+            // 没有子选项，直接开始计时，子类别与主类别一致
+            startTimer(idx, { name: cat.name, emoji: cat.emoji });
+          } else {
+            showSubcategoryModal(idx);
+          }
+        });
         container.appendChild(btn);
       });
     }
 
-    function startTimer(catIndex) {
+    // 弹出子选项选择窗口
+    function showSubcategoryModal(catIndex) {
+      const cat = categories[catIndex];
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      
+      let subBtnsHtml = '';
+      cat.subcategories.forEach(sub => {
+        subBtnsHtml += `<button class="sub-btn" data-subname="${sub.name}" data-subemoji="${sub.emoji || '📌'}" data-custom="${sub.custom || false}">${sub.emoji || ''} ${sub.name}</button>`;
+      });
+
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width:360px;">
+          <div class="modal-emoji">${cat.emoji}</div>
+          <div class="modal-text" style="font-size:1.2rem;">选择 ${cat.name} 的子类别</div>
+          <div class="sub-btns">${subBtnsHtml}</div>
+          <div class="custom-input-area" id="customInputArea" style="display:none;">
+            <input type="text" id="customSubName" placeholder="请输入子类别名称">
+            <button id="confirmCustomBtn">开始</button>
+          </div>
+          <button class="close-modal" style="margin-top:10px;">返回</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // 为每个子选项按钮绑定事件
+      modal.querySelectorAll('.sub-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          const subName = this.dataset.subname;
+          const subEmoji = this.dataset.subemoji;
+          const isCustom = this.dataset.custom === 'true';
+          if (isCustom) {
+            // 显示自定义输入区域
+            modal.querySelector('#customInputArea').style.display = 'flex';
+            const input = modal.querySelector('#customSubName');
+            input.placeholder = `输入具体的 ${subName}`;
+            input.focus();
+          } else {
+            // 直接开始计时
+            modal.remove();
+            startTimer(catIndex, { name: subName, emoji: subEmoji });
+          }
+        });
+      });
+
+      // 自定义确认按钮
+      modal.querySelector('#confirmCustomBtn').addEventListener('click', () => {
+        const input = modal.querySelector('#customSubName');
+        const customName = input.value.trim();
+        if (!customName) return;
+        modal.remove();
+        startTimer(catIndex, { name: customName, emoji: '📝' }); // 自定义用📝 emoji
+      });
+
+      modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+    }
+
+    function startTimer(catIndex, subcategory) {
       if (currentTimer) stopTimer();
-      currentTimer = { categoryIndex: catIndex, startTime: Date.now() };
-      document.querySelectorAll('.cat-btn').forEach((btn, i) => { btn.classList.toggle('active', i === catIndex); });
+      currentTimer = {
+        categoryIndex: catIndex,
+        subcategory: subcategory,
+        startTime: Date.now()
+      };
+      document.querySelectorAll('.cat-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === catIndex);
+      });
       document.getElementById('stopTimerBtn').style.display = 'inline-block';
       updateTimerDisplay();
       timerInterval = setInterval(updateTimerDisplay, 1000);
@@ -482,6 +599,7 @@
       const endTime = Date.now();
       const log = {
         category: currentTimer.categoryIndex,
+        subcategory: currentTimer.subcategory,
         start: currentTimer.startTime,
         end: endTime,
         duration: Math.floor((endTime - currentTimer.startTime) / 1000)
@@ -505,8 +623,10 @@
       const hrs = Math.floor(elapsed / 3600);
       const mins = Math.floor((elapsed % 3600) / 60);
       const secs = elapsed % 60;
+      const cat = categories[currentTimer.categoryIndex];
+      const sub = currentTimer.subcategory;
       document.getElementById('timerDisplay').textContent = 
-        `⏳ ${categories[currentTimer.categoryIndex].emoji} 计时中 ${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        `⏳ ${cat.emoji} ${cat.name} - ${sub.emoji} ${sub.name} ${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
     }
 
     function formatDuration(seconds) {
@@ -524,9 +644,10 @@
       if (logs.length === 0) { list.innerHTML = '<div style="color:#aaa; text-align:center;">暂无记录，开始计时吧</div>'; return; }
       logs.forEach((log, idx) => {
         const cat = categories[log.category];
+        const sub = log.subcategory || { name: cat.name, emoji: cat.emoji };
         const li = document.createElement('li');
         li.className = 'log-item';
-        li.innerHTML = `<span>${cat.emoji} ${cat.name} &nbsp; ${formatTime(log.start)} - ${formatTime(log.end)} &nbsp; (${formatDuration(log.duration)})</span><button class="delete-log" data-index="${idx}">🗑️</button>`;
+        li.innerHTML = `<span>${cat.emoji} ${cat.name} - ${sub.emoji} ${sub.name} &nbsp; ${formatTime(log.start)} - ${formatTime(log.end)} &nbsp; (${formatDuration(log.duration)})</span><button class="delete-log" data-index="${idx}">🗑️</button>`;
         list.appendChild(li);
       });
       document.querySelectorAll('.delete-log').forEach(btn => {
@@ -543,11 +664,13 @@
 
     document.getElementById('stopTimerBtn').addEventListener('click', stopTimer);
 
-    // ========== 今日复盘 ==========
+    // ========== 今日复盘（主类别汇总） ==========
     function generateReviewData() {
       const logs = getTodayLogs();
       const catDurations = {};
-      logs.forEach(log => { catDurations[log.category] = (catDurations[log.category] || 0) + log.duration; });
+      logs.forEach(log => { 
+        catDurations[log.category] = (catDurations[log.category] || 0) + log.duration; 
+      });
       return catDurations;
     }
     function generateReviewPraise(catDurations) {
@@ -581,7 +704,7 @@
     }
     document.getElementById('reviewBtn').addEventListener('click', showReviewModal);
 
-    // ========== 成长曲线模块 ==========
+    // ========== 成长曲线模块（主类别汇总） ==========
     function getDateRange(type) {
       const today = new Date();
       const dates = [];
