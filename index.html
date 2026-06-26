@@ -1122,6 +1122,9 @@ Licensed under GNU Affero General Public License v3.0
     // ========== 初始化 ==========
     requestNotificationPermission();
     renderCategoryButtons();
+    // ★★★ 添加停止按钮的事件绑定 ★★★
+    stopTimerBtn.addEventListener('click', stopTimer);
+    
     setViewDate(getTodayStr());
     setInterval(runReminders, 60000);
     setTimeout(runReminders, 2000);
