@@ -30,6 +30,32 @@
       text-align: center;
     }
     h1 { font-size: 2.4rem; margin-bottom: 5px; }
+    .date-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 5px;
+      flex-wrap: wrap;
+    }
+    .date-nav input[type="date"] {
+      border: 2px solid #ffe4c4;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 1rem;
+      background: white;
+      color: #555;
+    }
+    .today-btn {
+      background: #ffeaa7;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #333;
+    }
     .daily-praise-btn {
       background: #ffb6c1; border: none; padding: 10px 22px; border-radius: 50px;
       font-size: 1.1rem; font-weight: bold; color: white;
@@ -140,7 +166,6 @@
     }
     .reason-btn:hover { background: #ffe0e0; }
     
-    /* 子选项按钮样式 */
     .sub-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 15px; }
     .sub-btn {
       background: #f0f0f0; border: 2px solid #ddd; padding: 8px 16px; border-radius: 20px;
@@ -150,12 +175,19 @@
     .custom-input-area { display: flex; gap: 8px; margin-top: 15px; }
     .custom-input-area input { flex: 1; padding: 8px 12px; border-radius: 15px; border: 2px solid #ddd; font-size: 0.9rem; }
     .custom-input-area button { padding: 8px 16px; border-radius: 15px; border: none; background: #a29bfe; color: white; font-weight: bold; }
+    
+    .history-note { color: #e17055; font-size: 0.9rem; margin: 10px 0; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🌟夸夸清单</h1>
+    <div class="date-nav">
+      <input type="date" id="viewDatePicker">
+      <button class="today-btn" id="goTodayBtn" style="display:none;">回到今天</button>
+    </div>
     <button class="daily-praise-btn" id="showDailyBtn">📜 查看今日夸夸</button>
+    <div id="historyNote" class="history-note" style="display:none;">📂 正在查看历史记录，仅支持查看</div>
 
     <div class="time-section">
       <h3>⏱️ 时间记录</h3>
@@ -165,13 +197,13 @@
       <ul class="log-list" id="logList"></ul>
     </div>
 
-    <div class="task-input-area">
+    <div class="task-input-area" id="taskInputArea">
       <input type="text" id="taskInput" placeholder="写下今天要做的事...">
       <button id="addTaskBtn">➕</button>
     </div>
     <ul id="taskList"></ul>
 
-    <div class="action-buttons">
+    <div class="action-buttons" id="actionButtons">
       <button class="review-btn" id="reviewBtn">✨ 今日复盘</button>
       <button class="growth-btn" id="growthBtn">📈 成长曲线</button>
       <button class="reflect-btn" id="reflectBtn">📝 未完成反思</button>
@@ -233,7 +265,73 @@
       setTimeout(() => el.remove(), 2000);
     }
 
-    // ========== 通知权限 & 提醒逻辑 ==========
+    // ========== 日期管理与视图状态 ==========
+    let currentViewDate = getTodayStr();
+    const datePicker = document.getElementById('viewDatePicker');
+    const goTodayBtn = document.getElementById('goTodayBtn');
+    const historyNote = document.getElementById('historyNote');
+    const taskInputArea = document.getElementById('taskInputArea');
+    const actionButtons = document.getElementById('actionButtons');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const stopTimerBtn = document.getElementById('stopTimerBtn');
+    const catButtonsContainer = document.getElementById('catButtons');
+
+    // 初始化日期选择器
+    datePicker.value = currentViewDate;
+    datePicker.max = getTodayStr(); // 不能选择未来日期
+
+    // 更新界面模式
+    function updateUIForDate() {
+      const isToday = (currentViewDate === getTodayStr());
+      if (isToday) {
+        goTodayBtn.style.display = 'none';
+        historyNote.style.display = 'none';
+        taskInputArea.style.display = 'flex';
+        actionButtons.style.display = 'flex';
+        catButtonsContainer.style.display = 'flex';
+        timerDisplay.style.display = 'block';
+        stopTimerBtn.style.display = currentTimer ? 'inline-block' : 'none';
+        // 允许操作
+        document.querySelectorAll('.checkbox').forEach(cb => cb.disabled = false);
+        document.querySelectorAll('.delete-btn').forEach(btn => btn.disabled = false);
+        document.querySelectorAll('.delete-log').forEach(btn => btn.disabled = false);
+      } else {
+        goTodayBtn.style.display = 'inline-block';
+        historyNote.style.display = 'block';
+        taskInputArea.style.display = 'none';
+        actionButtons.style.display = 'none';
+        catButtonsContainer.style.display = 'none';
+        timerDisplay.style.display = 'none';
+        stopTimerBtn.style.display = 'none';
+        // 停止当前计时器
+        if (currentTimer) stopTimer();
+        // 禁用任务操作
+        document.querySelectorAll('.checkbox').forEach(cb => cb.disabled = true);
+        document.querySelectorAll('.delete-btn').forEach(btn => btn.disabled = true);
+        document.querySelectorAll('.delete-log').forEach(btn => btn.disabled = true);
+      }
+      // 更新标题显示
+      document.querySelector('.time-section h3').innerHTML = isToday ? '⏱️ 时间记录' : '⏱️ 历史时间记录';
+    }
+
+    // 切换日期
+    function setViewDate(dateStr) {
+      currentViewDate = dateStr;
+      datePicker.value = dateStr;
+      loadTasksForDate(dateStr);
+      loadTimeLogsForDate(dateStr);
+      updateUIForDate();
+    }
+
+    // 事件绑定
+    datePicker.addEventListener('change', (e) => {
+      setViewDate(e.target.value);
+    });
+    goTodayBtn.addEventListener('click', () => {
+      setViewDate(getTodayStr());
+    });
+
+    // ========== 通知权限 & 提醒逻辑（始终基于今天） ==========
     let notificationPermission = false;
     function requestNotificationPermission() {
       if (!("Notification" in window)) return;
@@ -266,7 +364,7 @@
       if (hour > 22 || (hour === 22 && minute >= 30)) {
         const lastRemind = localStorage.getItem(EVENING_REMIND_KEY);
         if (lastRemind !== getTodayStr()) {
-          const unfinished = tasks.filter(t => !t.completed);
+          const unfinished = loadTasksData(getTodayStr()).filter(t => !t.completed);
           if (unfinished.length > 0) {
             sendNotification(
               '🌙 晚间提醒',
@@ -285,7 +383,8 @@
       if (stored) { try { remindedTasks = JSON.parse(stored); } catch(e) {} }
       const now = Date.now();
       let updated = false;
-      tasks.forEach(task => {
+      const todayTasks = loadTasksData(getTodayStr());
+      todayTasks.forEach(task => {
         if (!task.completed && task.addedAt) {
           if ((now - task.addedAt) >= 2 * 60 * 60 * 1000) {
             if (!remindedTasks.includes(task.id)) {
@@ -351,38 +450,56 @@
     if (shouldShowDailyPraise()) setTimeout(showDailyModal, 600);
     document.getElementById('showDailyBtn').addEventListener('click', showDailyModal);
 
-    // ========== 待办清单逻辑 ==========
+    // ========== 任务数据管理 ==========
     const TASKS_KEY = 'daily_tasks';
-    let tasks = [];
-    function loadTasks() {
+    
+    // 根据日期获取任务数据
+    function loadTasksData(dateStr) {
       const stored = localStorage.getItem(TASKS_KEY);
       if (stored) {
         try {
           const data = JSON.parse(stored);
-          tasks = data.date === getTodayStr() ? data.items : [];
-        } catch(e) { tasks = []; }
+          return data.date === dateStr ? data.items : [];
+        } catch(e) { return []; }
       }
+      return [];
     }
-    function saveTasks() {
-      localStorage.setItem(TASKS_KEY, JSON.stringify({ date: getTodayStr(), items: tasks }));
+
+    // 保存任务（仅限今天）
+    function saveTasksData(dateStr, items) {
+      // 只允许保存今天的数据
+      if (dateStr !== getTodayStr()) return;
+      localStorage.setItem(TASKS_KEY, JSON.stringify({ date: dateStr, items }));
+      // 更新提醒状态
       const reminded = JSON.parse(localStorage.getItem(TASK_REMIND_KEY) || '[]');
-      const existingIds = tasks.map(t => t.id);
+      const existingIds = items.map(t => t.id);
       const filtered = reminded.filter(id => existingIds.includes(id));
       if (filtered.length !== reminded.length) {
         localStorage.setItem(TASK_REMIND_KEY, JSON.stringify(filtered));
       }
     }
+
+    let tasks = []; // 当前视图的任务
+
+    function loadTasksForDate(dateStr) {
+      tasks = loadTasksData(dateStr);
+      renderTasks();
+    }
+
     function renderTasks() {
       const list = document.getElementById('taskList');
       list.innerHTML = '';
       tasks.forEach((task, idx) => {
         const li = document.createElement('li');
         li.className = task.completed ? 'completed' : '';
-        li.innerHTML = `<div class="task-left"><input type="checkbox" class="checkbox" ${task.completed ? 'checked' : ''} data-index="${idx}"><span class="task-text">${escapeHtml(task.text)}</span></div><button class="delete-btn" data-index="${idx}">🗑️</button>`;
+        const disabledAttr = (currentViewDate !== getTodayStr()) ? 'disabled' : '';
+        li.innerHTML = `<div class="task-left"><input type="checkbox" class="checkbox" ${task.completed ? 'checked' : ''} data-index="${idx}" ${disabledAttr}><span class="task-text">${escapeHtml(task.text)}</span></div><button class="delete-btn" data-index="${idx}" ${disabledAttr}>🗑️</button>`;
         list.appendChild(li);
       });
+      // 事件绑定
       document.querySelectorAll('.checkbox').forEach(cb => {
         cb.addEventListener('change', function(e) {
+          if (currentViewDate !== getTodayStr()) return;
           const idx = +this.dataset.index;
           tasks[idx].completed = this.checked;
           if (this.checked) {
@@ -390,20 +507,24 @@
             launchConfetti();
             showFloatingPraise(randomItem(taskCompletePraises));
           }
-          saveTasks();
+          saveTasksData(currentViewDate, tasks);
           renderTasks();
         });
       });
       document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
+          if (currentViewDate !== getTodayStr()) return;
           tasks.splice(+this.dataset.index, 1);
-          saveTasks();
+          saveTasksData(currentViewDate, tasks);
           renderTasks();
         });
       });
     }
+
     function escapeHtml(text) { return String(text).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
+
     document.getElementById('addTaskBtn').addEventListener('click', () => {
+      if (currentViewDate !== getTodayStr()) return;
       const input = document.getElementById('taskInput');
       const text = input.value.trim();
       if (!text) return;
@@ -415,16 +536,21 @@
       };
       tasks.push(newTask);
       input.value = '';
-      saveTasks();
+      saveTasksData(currentViewDate, tasks);
       renderTasks();
     });
     document.getElementById('taskInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('addTaskBtn').click(); });
 
-    // ========== 时间追踪模块（含子选项）==========
+    // ========== 时间日志管理 ==========
     const categories = [
       { 
         name: '工作', emoji: '💻', color: '#a29bfe',
-        subcategories: []  // 无子选项，点击后直接开始计时
+        subcategories: [
+          { name: '会议讨论', emoji: '🗣️' },
+          { name: '深度工作', emoji: '🧠' },
+          { name: '沟通协调', emoji: '📞' },
+          { name: '自定义', emoji: '✍️', custom: true }
+        ]
       },
       { 
         name: '学习', emoji: '📖', color: '#74b9ff',
@@ -433,35 +559,38 @@
           { name: '专业领域视频学习', emoji: '🎥' },
           { name: '化妆学习', emoji: '💄' },
           { name: '弹钢琴', emoji: '🎹' },
-          { name: '其他技能学习', emoji: '✨', custom: true }
+          { name: '自定义', emoji: '✍️', custom: true }
         ]
       },
       { 
         name: '休息', emoji: '🧘', color: '#55efc4',
         subcategories: [
           { name: '午休休息', emoji: '😴' },
-          { name: '晚上睡觉休息', emoji: '🌙' }
+          { name: '晚上睡觉休息', emoji: '🌙' },
+          { name: '自定义', emoji: '✍️', custom: true }
         ]
       },
       { 
         name: '运动', emoji: '🏃', color: '#fd79a8',
         subcategories: [
           { name: '散步', emoji: '🚶' },
-          { name: '跳舞', emoji: '💃' }
+          { name: '跳舞', emoji: '💃' },
+          { name: '自定义', emoji: '✍️', custom: true }
         ]
       },
       { 
         name: '娱乐', emoji: '🎮', color: '#fdcb6e',
         subcategories: [
           { name: '刷视频', emoji: '📱' },
-          { name: '旅游', emoji: '✈️' }
+          { name: '旅游', emoji: '✈️' },
+          { name: '自定义', emoji: '✍️', custom: true }
         ]
       },
       { 
         name: '其他', emoji: '📌', color: '#b2bec3',
         subcategories: [
           { name: '上下班通勤', emoji: '🚌' },
-          { name: '其他自定义', emoji: '🔖', custom: true }
+          { name: '自定义', emoji: '✍️', custom: true }
         ]
       }
     ];
@@ -469,20 +598,34 @@
     const TIME_LOG_KEY = 'time_log';
     const TIME_HISTORY_KEY = 'time_history';
     const REFLECTION_KEY = 'daily_reflections';
-    let currentTimer = null;  // 结构: { categoryIndex, subcategory: {name, emoji}, startTime }
+    let currentTimer = null;
     let timerInterval = null;
 
-    function getTodayLogs() {
-      const stored = localStorage.getItem(TIME_LOG_KEY);
-      if (stored) { try { const data = JSON.parse(stored); return data.date === getTodayStr() ? data.logs : []; } catch(e) { return []; } }
-      return [];
+    // 获取某一天的日志
+    function getLogsForDate(dateStr) {
+      if (dateStr === getTodayStr()) {
+        const stored = localStorage.getItem(TIME_LOG_KEY);
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            return data.date === dateStr ? data.logs : [];
+          } catch(e) { return []; }
+        }
+        return [];
+      } else {
+        const history = getHistoryLogs();
+        const entry = history.find(e => e.date === dateStr);
+        return entry ? entry.logs : [];
+      }
     }
-    function saveTodayLogs(logs) {
-      localStorage.setItem(TIME_LOG_KEY, JSON.stringify({ date: getTodayStr(), logs }));
-    }
+
     function getHistoryLogs() {
       const stored = localStorage.getItem(TIME_HISTORY_KEY);
       return stored ? JSON.parse(stored) : [];
+    }
+
+    function saveTodayLogs(logs) {
+      localStorage.setItem(TIME_LOG_KEY, JSON.stringify({ date: getTodayStr(), logs }));
     }
     function saveHistoryLogs(dateStr, logs) {
       const history = getHistoryLogs();
@@ -501,7 +644,37 @@
       localStorage.setItem(REFLECTION_KEY, JSON.stringify(reflections));
     }
 
-    // 渲染主类别按钮
+    function loadTimeLogsForDate(dateStr) {
+      const logs = getLogsForDate(dateStr);
+      const list = document.getElementById('logList');
+      list.innerHTML = '';
+      if (logs.length === 0) {
+        list.innerHTML = '<div style="color:#aaa; text-align:center;">暂无记录</div>';
+        return;
+      }
+      logs.forEach((log, idx) => {
+        const cat = categories[log.category];
+        const sub = log.subcategory || { name: cat.name, emoji: cat.emoji };
+        const li = document.createElement('li');
+        li.className = 'log-item';
+        const deleteBtnDisabled = (currentViewDate !== getTodayStr()) ? 'disabled' : '';
+        li.innerHTML = `<span>${cat.emoji} ${cat.name} - ${sub.emoji} ${sub.name} &nbsp; ${formatTime(log.start)} - ${formatTime(log.end)} &nbsp; (${formatDuration(log.duration)})</span><button class="delete-log" data-index="${idx}" ${deleteBtnDisabled}>🗑️</button>`;
+        list.appendChild(li);
+      });
+      // 绑定删除事件（仅今天可删）
+      document.querySelectorAll('.delete-log').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          if (currentViewDate !== getTodayStr()) return;
+          const idx = +this.dataset.index;
+          const logs = getLogsForDate(getTodayStr());
+          logs.splice(idx, 1);
+          saveTodayLogs(logs);
+          saveHistoryLogs(getTodayStr(), logs);
+          loadTimeLogsForDate(getTodayStr());
+        });
+      });
+    }
+
     function renderCategoryButtons() {
       const container = document.getElementById('catButtons');
       container.innerHTML = '';
@@ -510,20 +683,13 @@
         btn.className = 'cat-btn';
         btn.style.backgroundColor = cat.color;
         btn.innerHTML = `${cat.emoji} ${cat.name}`;
-        btn.addEventListener('click', () => {
-          if (cat.subcategories.length === 0) {
-            // 没有子选项，直接开始计时，子类别与主类别一致
-            startTimer(idx, { name: cat.name, emoji: cat.emoji });
-          } else {
-            showSubcategoryModal(idx);
-          }
-        });
+        btn.addEventListener('click', () => showSubcategoryModal(idx));
         container.appendChild(btn);
       });
     }
 
-    // 弹出子选项选择窗口
     function showSubcategoryModal(catIndex) {
+      if (currentViewDate !== getTodayStr()) return;
       const cat = categories[catIndex];
       const modal = document.createElement('div');
       modal.className = 'modal';
@@ -539,7 +705,7 @@
           <div class="modal-text" style="font-size:1.2rem;">选择 ${cat.name} 的子类别</div>
           <div class="sub-btns">${subBtnsHtml}</div>
           <div class="custom-input-area" id="customInputArea" style="display:none;">
-            <input type="text" id="customSubName" placeholder="请输入子类别名称">
+            <input type="text" id="customSubName" placeholder="输入具体的活动名称">
             <button id="confirmCustomBtn">开始</button>
           </div>
           <button class="close-modal" style="margin-top:10px;">返回</button>
@@ -547,39 +713,36 @@
       `;
       document.body.appendChild(modal);
 
-      // 为每个子选项按钮绑定事件
       modal.querySelectorAll('.sub-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
           const subName = this.dataset.subname;
           const subEmoji = this.dataset.subemoji;
           const isCustom = this.dataset.custom === 'true';
           if (isCustom) {
-            // 显示自定义输入区域
             modal.querySelector('#customInputArea').style.display = 'flex';
             const input = modal.querySelector('#customSubName');
-            input.placeholder = `输入具体的 ${subName}`;
+            input.placeholder = `输入你的具体活动`;
             input.focus();
           } else {
-            // 直接开始计时
             modal.remove();
             startTimer(catIndex, { name: subName, emoji: subEmoji });
           }
         });
       });
 
-      // 自定义确认按钮
       modal.querySelector('#confirmCustomBtn').addEventListener('click', () => {
         const input = modal.querySelector('#customSubName');
         const customName = input.value.trim();
         if (!customName) return;
         modal.remove();
-        startTimer(catIndex, { name: customName, emoji: '📝' }); // 自定义用📝 emoji
+        startTimer(catIndex, { name: customName, emoji: '✍️' });
       });
 
       modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
     }
 
     function startTimer(catIndex, subcategory) {
+      if (currentViewDate !== getTodayStr()) return;
       if (currentTimer) stopTimer();
       currentTimer = {
         categoryIndex: catIndex,
@@ -589,7 +752,7 @@
       document.querySelectorAll('.cat-btn').forEach((btn, i) => {
         btn.classList.toggle('active', i === catIndex);
       });
-      document.getElementById('stopTimerBtn').style.display = 'inline-block';
+      stopTimerBtn.style.display = 'inline-block';
       updateTimerDisplay();
       timerInterval = setInterval(updateTimerDisplay, 1000);
     }
@@ -604,7 +767,7 @@
         end: endTime,
         duration: Math.floor((endTime - currentTimer.startTime) / 1000)
       };
-      const logs = getTodayLogs();
+      const logs = getLogsForDate(getTodayStr());
       logs.push(log);
       saveTodayLogs(logs);
       saveHistoryLogs(getTodayStr(), logs);
@@ -612,9 +775,9 @@
       currentTimer = null;
       clearInterval(timerInterval);
       document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('stopTimerBtn').style.display = 'none';
+      stopTimerBtn.style.display = 'none';
       document.getElementById('timerDisplay').textContent = '选择活动开始计时';
-      renderLogs();
+      loadTimeLogsForDate(getTodayStr());
     }
 
     function updateTimerDisplay() {
@@ -637,60 +800,27 @@
     }
     function formatTime(ts) { return new Date(ts).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' }); }
 
-    function renderLogs() {
-      const logs = getTodayLogs();
-      const list = document.getElementById('logList');
-      list.innerHTML = '';
-      if (logs.length === 0) { list.innerHTML = '<div style="color:#aaa; text-align:center;">暂无记录，开始计时吧</div>'; return; }
-      logs.forEach((log, idx) => {
-        const cat = categories[log.category];
-        const sub = log.subcategory || { name: cat.name, emoji: cat.emoji };
-        const li = document.createElement('li');
-        li.className = 'log-item';
-        li.innerHTML = `<span>${cat.emoji} ${cat.name} - ${sub.emoji} ${sub.name} &nbsp; ${formatTime(log.start)} - ${formatTime(log.end)} &nbsp; (${formatDuration(log.duration)})</span><button class="delete-log" data-index="${idx}">🗑️</button>`;
-        list.appendChild(li);
-      });
-      document.querySelectorAll('.delete-log').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          const idx = +this.dataset.index;
-          let logs = getTodayLogs();
-          logs.splice(idx, 1);
-          saveTodayLogs(logs);
-          saveHistoryLogs(getTodayStr(), logs);
-          renderLogs();
-        });
-      });
-    }
-
-    document.getElementById('stopTimerBtn').addEventListener('click', stopTimer);
-
-    // ========== 今日复盘（主类别汇总） ==========
-    function generateReviewData() {
-      const logs = getTodayLogs();
-      const catDurations = {};
-      logs.forEach(log => { 
-        catDurations[log.category] = (catDurations[log.category] || 0) + log.duration; 
-      });
-      return catDurations;
-    }
-    function generateReviewPraise(catDurations) {
-      if (Object.keys(catDurations).length === 0) return "今天还没有时间记录。但请记得：我的存在本身就是一件很美好的事。不必苛求每一天都完美，尽力而为，就问心无愧。";
-      let maxCatIdx = null, maxTime = 0;
-      for (let [cat, time] of Object.entries(catDurations)) { if (time > maxTime) { maxTime = time; maxCatIdx = +cat; } }
-      const cat = categories[maxCatIdx];
-      const hrs = Math.floor(maxTime / 3600);
-      const mins = Math.floor((maxTime % 3600) / 60);
-      const timeStr = hrs > 0 ? `${hrs}小时${mins}分钟` : `${mins}分钟`;
-      return praiseMap[cat.name] || randomItem([
-        `今天你在${cat.name}上投入了${timeStr}。凡自强不息者，终将得到救赎。`,
-        `${timeStr}的${cat.name}时光。人生最精彩的不是成功的那一瞬间，而是回头看，那段漆黑看似没有尽头、苦苦摸索的过程。`
-      ]);
-    }
+    // ========== 今日复盘（仅今天可用） ==========
     function showReviewModal() {
-      const catDurations = generateReviewData();
-      const praise = generateReviewPraise(catDurations);
-      let statsHtml = '';
+      if (currentViewDate !== getTodayStr()) {
+        alert('历史日期不支持复盘，请回到今天再试。');
+        return;
+      }
+      const logs = getLogsForDate(getTodayStr());
+      const catDurations = {};
+      logs.forEach(log => { catDurations[log.category] = (catDurations[log.category] || 0) + log.duration; });
       const totalSeconds = Object.values(catDurations).reduce((a,b) => a+b, 0);
+      let praise = "今天还没有时间记录。但请记得：我的存在本身就是一件很美好的事。不必苛求每一天都完美，尽力而为，就问心无愧。";
+      if (totalSeconds > 0) {
+        let maxCatIdx = null, maxTime = 0;
+        for (let [cat, time] of Object.entries(catDurations)) { if (time > maxTime) { maxTime = time; maxCatIdx = +cat; } }
+        const cat = categories[maxCatIdx];
+        const hrs = Math.floor(maxTime / 3600);
+        const mins = Math.floor((maxTime % 3600) / 60);
+        const timeStr = hrs > 0 ? `${hrs}小时${mins}分钟` : `${mins}分钟`;
+        praise = praiseMap[cat.name] || `今天你在${cat.name}上投入了${timeStr}。凡自强不息者，终将得到救赎。`;
+      }
+      let statsHtml = '';
       categories.forEach((cat, idx) => {
         const sec = catDurations[idx] || 0;
         const percent = totalSeconds > 0 ? (sec / totalSeconds * 100).toFixed(1) : 0;
@@ -702,9 +832,10 @@
       document.body.appendChild(modal);
       modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
     }
+
     document.getElementById('reviewBtn').addEventListener('click', showReviewModal);
 
-    // ========== 成长曲线模块（主类别汇总） ==========
+    // ========== 成长曲线（保持不变） ==========
     function getDateRange(type) {
       const today = new Date();
       const dates = [];
@@ -741,6 +872,13 @@
           });
         }
       });
+      // 加入今天的数据（可能不在 history 中）
+      const todayLogs = getLogsForDate(getTodayStr());
+      if (dataByDate[getTodayStr()]) {
+        todayLogs.forEach(log => {
+          dataByDate[getTodayStr()][log.category] += log.duration;
+        });
+      }
 
       const canvas = document.getElementById('growthCanvas');
       const container = canvas.parentNode;
@@ -760,33 +898,26 @@
       maxDuration = Math.ceil(maxDuration / 600) * 600;
       if (maxDuration === 0) maxDuration = 600;
 
-      c.strokeStyle = '#ccc';
-      c.lineWidth = 1;
+      c.strokeStyle = '#ccc'; c.lineWidth = 1;
       c.beginPath();
       c.moveTo(padding.left, padding.top);
       c.lineTo(padding.left, canvas.height - padding.bottom);
       c.lineTo(canvas.width - padding.right, canvas.height - padding.bottom);
       c.stroke();
 
-      c.fillStyle = '#888';
-      c.font = '10px sans-serif';
-      c.textAlign = 'right';
+      c.fillStyle = '#888'; c.font = '10px sans-serif'; c.textAlign = 'right';
       const ySteps = 4;
       for (let i = 0; i <= ySteps; i++) {
         const y = padding.top + (chartHeight / ySteps) * i;
         const val = Math.round(maxDuration - (maxDuration / ySteps) * i);
         c.fillText(val + '秒', padding.left - 5, y + 3);
         if (i > 0) {
-          c.strokeStyle = '#eee';
-          c.beginPath();
-          c.moveTo(padding.left, y);
-          c.lineTo(canvas.width - padding.right, y);
-          c.stroke();
+          c.strokeStyle = '#eee'; c.beginPath();
+          c.moveTo(padding.left, y); c.lineTo(canvas.width - padding.right, y); c.stroke();
         }
       }
 
-      c.fillStyle = '#888';
-      c.textAlign = 'center';
+      c.fillStyle = '#888'; c.textAlign = 'center';
       const step = Math.max(1, Math.floor(dates.length / 6));
       dates.forEach((date, idx) => {
         if (idx % step === 0 || idx === dates.length - 1) {
@@ -796,22 +927,17 @@
       });
 
       categories.forEach((cat, catIdx) => {
-        c.strokeStyle = cat.color;
-        c.lineWidth = 2;
+        c.strokeStyle = cat.color; c.lineWidth = 2;
         c.beginPath();
         dates.forEach((date, idx) => {
           const x = padding.left + (chartWidth / (dates.length - 1)) * idx;
           const y = padding.top + chartHeight - (dataByDate[date][catIdx] / maxDuration) * chartHeight;
-          if (idx === 0) c.moveTo(x, y);
-          else c.lineTo(x, y);
+          if (idx === 0) c.moveTo(x, y); else c.lineTo(x, y);
         });
         c.stroke();
         const legendX = padding.left + 10 + catIdx * 50;
-        c.fillStyle = cat.color;
-        c.fillRect(legendX, 5, 10, 10);
-        c.fillStyle = '#333';
-        c.font = '9px sans-serif';
-        c.fillText(cat.emoji, legendX + 12, 13);
+        c.fillStyle = cat.color; c.fillRect(legendX, 5, 10, 10);
+        c.fillStyle = '#333'; c.font = '9px sans-serif'; c.fillText(cat.emoji, legendX + 12, 13);
       });
 
       let totalSeconds = 0;
@@ -856,34 +982,26 @@
     }
     document.getElementById('growthBtn').addEventListener('click', showGrowthModal);
 
-    // ========== 未完成反思模块 ==========
-    function getUnfinishedTasks() {
-      return tasks.filter(t => !t.completed);
-    }
-
+    // ========== 未完成反思（仅今天） ==========
     function showReflectModal() {
-      const unfinished = getUnfinishedTasks();
+      if (currentViewDate !== getTodayStr()) {
+        alert('只能对今天的任务进行反思哦。');
+        return;
+      }
+      const unfinished = tasks.filter(t => !t.completed);
       if (unfinished.length === 0) {
         const modal = document.createElement('div');
         modal.className = 'modal';
-        modal.innerHTML = `
-          <div class="modal-content">
-            <div class="modal-emoji">🎉</div>
-            <div class="modal-text">今天的任务都完成了！<br>你太了不起了！</div>
-            <button class="close-modal">收下赞美 💖</button>
-          </div>
-        `;
+        modal.innerHTML = `<div class="modal-content"><div class="modal-emoji">🎉</div><div class="modal-text">今天的任务都完成了！<br>你太了不起了！</div><button class="close-modal">收下赞美 💖</button></div>`;
         document.body.appendChild(modal);
         modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
         return;
       }
-
       let taskListHtml = '<ul style="text-align:left; margin:10px 0;">';
       unfinished.forEach(task => {
         taskListHtml += `<li style="background:#fff3f3; margin:5px 0; padding:5px 10px; border-radius:10px;">📌 ${escapeHtml(task.text)}</li>`;
       });
       taskListHtml += '</ul>';
-
       const modal = document.createElement('div');
       modal.className = 'modal';
       modal.innerHTML = `
@@ -898,53 +1016,31 @@
         </div>
       `;
       document.body.appendChild(modal);
-
       const feedbackMessages = {
         too_much: "任务确实有点多，不是你懒，是计划可以更温柔。明天少安排一点，或者把任务拆得更小试试。你已经很负责了。",
         special: "特殊状况谁都会遇到，这不是你的问题。先照顾好自己，等状态好了再补上，没关系的。",
         lazy: "偶尔不想做太正常了，我也经常这样。不过，我们可以试着只做5分钟，只要开始，就已经赢了。迈出一小步，剩下的交给惯性吧。"
       };
-
       const handleReasonClick = (reason) => {
-        const reflection = {
-          date: getTodayStr(),
-          reason: reason,
-          unfinishedTasks: unfinished.map(t => t.text),
-          timestamp: new Date().toISOString()
-        };
+        const reflection = { date: getTodayStr(), reason, unfinishedTasks: unfinished.map(t => t.text), timestamp: new Date().toISOString() };
         saveReflection(reflection);
-        
         modal.remove();
         const feedbackModal = document.createElement('div');
         feedbackModal.className = 'modal';
-        feedbackModal.innerHTML = `
-          <div class="modal-content">
-            <div class="modal-emoji">💬</div>
-            <div class="modal-text" style="font-size:1.1rem;">${feedbackMessages[reason]}</div>
-            <button class="close-modal">好的，我明白了 🌱</button>
-          </div>
-        `;
+        feedbackModal.innerHTML = `<div class="modal-content"><div class="modal-emoji">💬</div><div class="modal-text" style="font-size:1.1rem;">${feedbackMessages[reason]}</div><button class="close-modal">好的，我明白了 🌱</button></div>`;
         document.body.appendChild(feedbackModal);
         feedbackModal.querySelector('.close-modal').addEventListener('click', () => feedbackModal.remove());
       };
-
-      modal.querySelectorAll('.reason-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          handleReasonClick(e.target.dataset.reason);
-        });
-      });
-
+      modal.querySelectorAll('.reason-btn').forEach(btn => btn.addEventListener('click', (e) => handleReasonClick(e.target.dataset.reason)));
       modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
     }
-
     document.getElementById('reflectBtn').addEventListener('click', showReflectModal);
 
     // ========== 初始化 ==========
     requestNotificationPermission();
     renderCategoryButtons();
-    renderLogs();
-    loadTasks();
-    renderTasks();
+    // 初始加载今天的数据
+    setViewDate(getTodayStr());
 
     setInterval(runReminders, 60000);
     setTimeout(runReminders, 2000);
