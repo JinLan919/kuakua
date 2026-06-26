@@ -114,7 +114,7 @@ Licensed under GNU Affero General Public License v3.0
     .delete-btn:hover { color: #ff6b6b; }
 
     .action-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
-    .review-btn, .growth-btn, .reflect-btn, .deep-think-btn, .export-btn, .import-btn {
+    .review-btn, .growth-btn, .reflect-btn, .deep-think-btn, .export-btn, .import-btn, .export-txt-btn {
       border: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; color: white;
       cursor: pointer; font-size: 0.95rem; box-shadow: 0 8px 18px rgba(0,0,0,0.2); transition: all 0.2s;
       white-space: nowrap;
@@ -125,7 +125,8 @@ Licensed under GNU Affero General Public License v3.0
     .deep-think-btn { background: #e17055; }
     .export-btn { background: #00b894; }
     .import-btn { background: #6c5ce7; }
-    .review-btn:hover, .growth-btn:hover, .reflect-btn:hover, .deep-think-btn:hover, .export-btn:hover, .import-btn:hover { transform: scale(1.03); }
+    .export-txt-btn { background: #0984e3; }
+    .review-btn:hover, .growth-btn:hover, .reflect-btn:hover, .deep-think-btn:hover, .export-btn:hover, .import-btn:hover, .export-txt-btn:hover { transform: scale(1.03); }
 
     .modal {
       position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5);
@@ -146,49 +147,18 @@ Licensed under GNU Affero General Public License v3.0
     }
 
     .deep-question-area { text-align: left; margin: 15px 0; }
-    .deep-question-area label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 4px;
-      color: #444;
-      font-size: 0.95rem;
-    }
+    .deep-question-area label { display: block; font-weight: bold; margin-bottom: 4px; color: #444; font-size: 0.95rem; }
     .deep-question-area textarea {
-      width: 100%;
-      border: 2px solid #ddd;
-      border-radius: 20px;
-      padding: 10px 14px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      resize: vertical;
-      margin-bottom: 12px;
-      outline: none;
+      width: 100%; border: 2px solid #ddd; border-radius: 20px; padding: 10px 14px;
+      font-size: 0.9rem; font-family: inherit; resize: vertical; margin-bottom: 12px; outline: none;
     }
     .deep-question-area textarea:focus { border-color: #e17055; }
 
-    .action-guide-area {
-      text-align: left;
-      margin: 15px 0;
-      background: #fafafa;
-      border-radius: 20px;
-      padding: 15px;
-    }
-    .action-guide-area label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
-      color: #2d3436;
-      font-size: 1rem;
-    }
+    .action-guide-area { text-align: left; margin: 15px 0; background: #fafafa; border-radius: 20px; padding: 15px; }
+    .action-guide-area label { display: block; font-weight: bold; margin-bottom: 6px; color: #2d3436; font-size: 1rem; }
     .action-guide-area textarea {
-      width: 100%;
-      border: 2px solid #b2bec3;
-      border-radius: 20px;
-      padding: 10px 14px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      resize: vertical;
-      outline: none;
+      width: 100%; border: 2px solid #b2bec3; border-radius: 20px; padding: 10px 14px;
+      font-size: 0.9rem; font-family: inherit; resize: vertical; outline: none;
     }
     .action-guide-area textarea:focus { border-color: #e17055; }
 
@@ -236,14 +206,8 @@ Licensed under GNU Affero General Public License v3.0
     .history-note { color: #e17055; font-size: 0.9rem; margin: 10px 0; }
     
     .view-deep-btn, .view-insight-btn {
-      border: none;
-      border-radius: 20px;
-      padding: 8px 20px;
-      font-weight: bold;
-      color: white;
-      margin: 5px;
-      cursor: pointer;
-      font-size: 0.9rem;
+      border: none; border-radius: 20px; padding: 8px 20px; font-weight: bold; color: white;
+      margin: 5px; cursor: pointer; font-size: 0.9rem;
     }
     .view-deep-btn { background: #f8c291; }
     .view-insight-btn { background: #82ccdd; }
@@ -280,6 +244,7 @@ Licensed under GNU Affero General Public License v3.0
       <button class="growth-btn" id="growthBtn">📈 成长曲线</button>
       <button class="reflect-btn" id="reflectBtn">📝 未完成反思</button>
       <button class="export-btn" id="exportBtn">💾 导出数据</button>
+      <button class="export-txt-btn" id="exportTxtBtn">📄 导出纯文本</button>
       <button class="import-btn" id="importBtn">📥 导入数据</button>
     </div>
   </div>
@@ -364,6 +329,138 @@ Licensed under GNU Affero General Public License v3.0
       showSimpleModal('✅', '数据已导出！请保存好这个文件。');
     }
     document.getElementById('exportBtn').addEventListener('click', exportAllData);
+
+    // ========== 导出纯文本功能 ==========
+    function exportPlainText() {
+      const tasksData = JSON.parse(localStorage.getItem('daily_tasks') || 'null');
+      const timeHistory = JSON.parse(localStorage.getItem('time_history') || '[]');
+      const deepThoughts = JSON.parse(localStorage.getItem('deep_thoughts') || '[]');
+      const dailyInsights = JSON.parse(localStorage.getItem('daily_insights') || '[]');
+      const lifeAnalysis = JSON.parse(localStorage.getItem('life_analysis') || '[]');
+      const reflections = JSON.parse(localStorage.getItem('daily_reflections') || '[]');
+
+      let text = '夸夸清单 - 纯文本导出\n';
+      text += `导出日期：${new Date().toLocaleString()}\n`;
+      text += '========================================\n\n';
+
+      // 任务
+      if (tasksData) {
+        text += `【任务清单】日期：${tasksData.date}\n`;
+        if (tasksData.items && tasksData.items.length > 0) {
+          tasksData.items.forEach(task => {
+            text += `${task.completed ? '[✓]' : '[ ]'} ${task.text}\n`;
+          });
+        } else {
+          text += '（无任务）\n';
+        }
+        text += '\n';
+      }
+
+      // 时间记录（按日期）
+      text += '【时间记录】\n';
+      // 添加今日日志
+      const todayLogs = JSON.parse(localStorage.getItem('time_log') || 'null');
+      const allDates = new Set();
+      timeHistory.forEach(entry => allDates.add(entry.date));
+      if (todayLogs && todayLogs.date) allDates.add(todayLogs.date);
+      
+      const sortedDates = Array.from(allDates).sort();
+      if (sortedDates.length === 0) {
+        text += '（无时间记录）\n\n';
+      } else {
+        sortedDates.forEach(date => {
+          text += `\n📅 ${date}\n`;
+          let logs = [];
+          if (todayLogs && todayLogs.date === date) {
+            logs = todayLogs.logs;
+          } else {
+            const historyEntry = timeHistory.find(e => e.date === date);
+            if (historyEntry) logs = historyEntry.logs;
+          }
+          if (logs.length === 0) {
+            text += '  无记录\n';
+          } else {
+            // 类别名称映射
+            const catNames = ['工作', '学习', '休息', '运动', '娱乐', '其他', '刻意练习'];
+            logs.forEach(log => {
+              const catName = catNames[log.category] || '未知';
+              const subName = log.subcategory ? log.subcategory.name : catName;
+              const start = new Date(log.start).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
+              const end = new Date(log.end).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
+              const duration = formatDuration(log.duration);
+              text += `  ${catName} - ${subName}  ${start}-${end}  (${duration})\n`;
+            });
+          }
+        });
+        text += '\n';
+      }
+
+      // 深度思考
+      text += '【深度思考·4问】\n';
+      if (deepThoughts.length === 0) {
+        text += '（无记录）\n\n';
+      } else {
+        deepThoughts.forEach(entry => {
+          text += `\n📅 ${entry.date}\n`;
+          const q = ['1. 这件事的本质是什么？', '2. 这件事有没有长期价值？', '3. 这件事的终局是什么？', '4. 有没有反例？运用的边界是什么？'];
+          entry.answers.forEach((ans, i) => {
+            text += `${q[i]}\n  ${ans || '（未填写）'}\n\n`;
+          });
+        });
+      }
+
+      // 每日感悟
+      text += '【今日感悟】\n';
+      if (dailyInsights.length === 0) {
+        text += '（无记录）\n\n';
+      } else {
+        dailyInsights.forEach(entry => {
+          text += `\n📅 ${entry.date}\n`;
+          text += `感悟：${entry.text || '（未填写）'}\n`;
+          text += `应用场景：${entry.application || '（未填写）'}\n`;
+        });
+        text += '\n';
+      }
+
+      // 生活难题分析
+      text += '【生活难题分析6问】\n';
+      if (lifeAnalysis.length === 0) {
+        text += '（无记录）\n\n';
+      } else {
+        lifeAnalysis.forEach(entry => {
+          text += `\n📅 ${entry.date}\n`;
+          const qs = ['1. 是什么在阻止我解决根本原因？', '2. 这个回路中，哪个节点一旦改变，其他节点会自动跟着变？', '3. 最小的第一步是什么？', '4. 什么情况下我会破例？', '5. 谁能帮我？或者什么环境能推我一把？', '6. 如果我故意做相反的事，会发生什么？'];
+          entry.answers.forEach((ans, i) => {
+            text += `${qs[i]}\n  ${ans || '（未填写）'}\n\n`;
+          });
+          text += `行动指南：\n${entry.actionPlan || '（未填写）'}\n\n`;
+        });
+      }
+
+      // 未完成反思
+      text += '【未完成反思】\n';
+      if (reflections.length === 0) {
+        text += '（无记录）\n\n';
+      } else {
+        reflections.forEach(ref => {
+          text += `📅 ${ref.date}  ${ref.timestamp ? new Date(ref.timestamp).toLocaleTimeString('zh-CN') : ''}\n`;
+          text += `原因：${ref.reason === 'too_much' ? '任务太多' : ref.reason === 'special' ? '特殊原因' : ref.reason === 'lazy' ? '单纯不想做' : ref.reason}\n`;
+          text += `未完成任务：${ref.unfinishedTasks ? ref.unfinishedTasks.join('、') : '无'}\n\n`;
+        });
+      }
+
+      const blob = new Blob([text], { type: 'text/plain;charset=UTF-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `夸夸清单_文本导出_${getTodayStr()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSimpleModal('✅', '纯文本已导出！你可以直接打开阅读或打印。');
+    }
+    document.getElementById('exportTxtBtn').addEventListener('click', exportPlainText);
 
     // ========== 导入功能 ==========
     const importFileInput = document.getElementById('importFileInput');
@@ -522,7 +619,7 @@ Licensed under GNU Affero General Public License v3.0
       let updated = false;
       todayTasks.forEach(task => {
         if (!task.completed && task.addedAt && (now - task.addedAt >= 7200000) && !reminded.includes(task.id)) {
-          sendNotification('⏳ 任务延期', `任务“${task.text}”已经超过2小时了。`);
+          sendNotification('⏳ 任务延期', `任务"${task.text}"已经超过2小时了。`);
           reminded.push(task.id); updated = true;
         }
       });
@@ -552,7 +649,7 @@ Licensed under GNU Affero General Public License v3.0
       '休息': `你今天把时间用在了休息上。如果你累了，学会休息，而不是放弃。`,
       '运动': `你用汗水浇灌身体。真正在努力的，日子是不会舒服的。`,
       '娱乐': `你给了自己纯粹的快乐时光。别让生活的压力挤走快乐。`,
-      '其他': `今天你在“其他”事情上投入了时间。这些碎片时间同样构成了真实的你。`,
+      '其他': `今天你在"其他"事情上投入了时间。这些碎片时间同样构成了真实的你。`,
       '刻意练习': `今天你在刻意练习上付出了时间。每一个重复的动作，都是在雕刻未来的自己。`
     };
 
@@ -632,20 +729,7 @@ Licensed under GNU Affero General Public License v3.0
       const text = insight ? insight.text : '';
       const application = insight ? (insight.application || '') : '';
       const modal = document.createElement('div'); modal.className = 'modal';
-      modal.innerHTML = `
-        <div class="modal-content" style="max-width:420px;">
-          <div class="modal-emoji">💬</div>
-          <div style="font-weight:bold;">今日感悟</div>
-          <div style="color:#888;font-size:0.85rem;margin-bottom:10px;">${dateStr}</div>
-          <textarea id="insightText" rows="5" placeholder="今天有什么触动你的瞬间？或者想对自己说的话？" style="width:100%;border:2px solid #ddd;border-radius:20px;padding:12px;font-size:0.9rem;resize:vertical;outline:none;font-family:inherit;" ${readOnly ? 'readonly' : ''}>${escapeHtml(text)}</textarea>
-          <div class="deep-question-area" style="margin-top:12px;">
-            <label>🔧 这些感悟可以被用在哪里？怎么用？</label>
-            <textarea id="insightApplication" rows="4" placeholder="比如：把这份耐心用到明天的会议上..." style="width:100%;border:2px solid #ddd;border-radius:20px;padding:10px;font-size:0.9rem;resize:vertical;outline:none;font-family:inherit;" ${readOnly ? 'readonly' : ''}>${escapeHtml(application)}</textarea>
-          </div>
-          ${readOnly ? '' : '<button id="saveInsightBtn" class="close-modal" style="background:#82ccdd;margin-top:12px;">💾 保存感悟</button>'}
-          <button class="close-modal" style="margin-top:8px;">${readOnly ? '返回' : '取消'}</button>
-        </div>
-      `;
+      modal.innerHTML = `<div class="modal-content" style="max-width:420px;"><div class="modal-emoji">💬</div><div style="font-weight:bold;">今日感悟</div><div style="color:#888;font-size:0.85rem;margin-bottom:10px;">${dateStr}</div><textarea id="insightText" rows="5" placeholder="今天有什么触动你的瞬间？或者想对自己说的话？" style="width:100%;border:2px solid #ddd;border-radius:20px;padding:12px;font-size:0.9rem;resize:vertical;outline:none;font-family:inherit;" ${readOnly ? 'readonly' : ''}>${escapeHtml(text)}</textarea><div class="deep-question-area" style="margin-top:12px;"><label>🔧 这些感悟可以被用在哪里？怎么用？</label><textarea id="insightApplication" rows="4" placeholder="比如：把这份耐心用到明天的会议上..." style="width:100%;border:2px solid #ddd;border-radius:20px;padding:10px;font-size:0.9rem;resize:vertical;outline:none;font-family:inherit;" ${readOnly ? 'readonly' : ''}>${escapeHtml(application)}</textarea></div>${readOnly ? '' : '<button id="saveInsightBtn" class="close-modal" style="background:#82ccdd;margin-top:12px;">💾 保存感悟</button>'}<button class="close-modal" style="margin-top:8px;">${readOnly ? '返回' : '取消'}</button></div>`;
       document.body.appendChild(modal);
       if (!readOnly) {
         modal.querySelector('#saveInsightBtn').addEventListener('click', () => {
@@ -778,7 +862,7 @@ Licensed under GNU Affero General Public License v3.0
       { name: '运动', emoji: '🏃', color: '#fd79a8', subcategories: [{ name: '散步', emoji: '🚶' }, { name: '跳舞', emoji: '💃' }, { name: '自定义', emoji: '✍️', custom: true }] },
       { name: '娱乐', emoji: '🎮', color: '#fdcb6e', subcategories: [{ name: '刷视频', emoji: '📱' }, { name: '旅游', emoji: '✈️' }, { name: '自定义', emoji: '✍️', custom: true }] },
       { name: '其他', emoji: '📌', color: '#b2bec3', subcategories: [{ name: '上下班通勤', emoji: '🚌' }, { name: '自定义', emoji: '✍️', custom: true }] },
-      { name: '刻意练习', emoji: '🎯', color: '#e056a0', subcategories: [{ name: '结构化表达', emoji: '🗣️' }, { name: '英语练习', emoji: '🇬🇧' }, { name: '自定义', emoji: '✍️', custom: true }] }
+      { name: '刻意练习', emoji: '🎯', color: '#e056a0', subcategories: [{ name: '结构化表达', emoji: '🗣️' }, { name: '英语练习', emoji: '📖' }, { name: '自定义', emoji: '✍️', custom: true }] }
     ];
     const TIME_LOG_KEY = 'time_log';
     const TIME_HISTORY_KEY = 'time_history';
