@@ -356,14 +356,12 @@ Licensed under GNU Affero General Public License v3.0
         text += '\n';
       }
 
-      // 时间记录（按日期）
+      // 时间记录
       text += '【时间记录】\n';
-      // 添加今日日志
       const todayLogs = JSON.parse(localStorage.getItem('time_log') || 'null');
       const allDates = new Set();
       timeHistory.forEach(entry => allDates.add(entry.date));
       if (todayLogs && todayLogs.date) allDates.add(todayLogs.date);
-      
       const sortedDates = Array.from(allDates).sort();
       if (sortedDates.length === 0) {
         text += '（无时间记录）\n\n';
@@ -380,7 +378,6 @@ Licensed under GNU Affero General Public License v3.0
           if (logs.length === 0) {
             text += '  无记录\n';
           } else {
-            // 类别名称映射
             const catNames = ['工作', '学习', '休息', '运动', '娱乐', '其他', '刻意练习'];
             logs.forEach(log => {
               const catName = catNames[log.category] || '未知';
@@ -827,16 +824,14 @@ Licensed under GNU Affero General Public License v3.0
           const idx = +this.dataset.index;
           tasks[idx].completed = this.checked;
           if (this.checked) { playDing(); launchConfetti(); showFloatingPraise(randomItem(taskCompletePraises)); }
-          saveTasksData(currentViewDate, tasks);
-          renderTasks();
+          saveTasksData(currentViewDate, tasks); renderTasks();
         });
       });
       document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
           if (currentViewDate !== getTodayStr()) return;
           tasks.splice(+this.dataset.index, 1);
-          saveTasksData(currentViewDate, tasks);
-          renderTasks();
+          saveTasksData(currentViewDate, tasks); renderTasks();
         });
       });
     }
@@ -849,12 +844,11 @@ Licensed under GNU Affero General Public License v3.0
       const newTask = { id: Date.now() + '-' + Math.random().toString(36).substr(2, 9), text, completed: false, addedAt: Date.now() };
       tasks.push(newTask);
       input.value = '';
-      saveTasksData(currentViewDate, tasks);
-      renderTasks();
+      saveTasksData(currentViewDate, tasks); renderTasks();
     });
     document.getElementById('taskInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('addTaskBtn').click(); });
 
-    // ========== 时间追踪（新增刻意练习类别） ==========
+    // ========== 时间追踪 ==========
     const categories = [
       { name: '工作', emoji: '💻', color: '#a29bfe', subcategories: [{ name: '会议讨论', emoji: '🗣️' }, { name: '深度工作', emoji: '🧠' }, { name: '沟通协调', emoji: '📞' }, { name: '自定义', emoji: '✍️', custom: true }] },
       { name: '学习', emoji: '📖', color: '#74b9ff', subcategories: [{ name: '读书', emoji: '📚' }, { name: '视频学习', emoji: '🎥' }, { name: '化妆学习', emoji: '💄' }, { name: '弹钢琴', emoji: '🎹' }, { name: '自定义', emoji: '✍️', custom: true }] },
@@ -885,9 +879,8 @@ Licensed under GNU Affero General Public License v3.0
     function saveTodayLogs(logs) { localStorage.setItem(TIME_LOG_KEY, JSON.stringify({ date: getTodayStr(), logs })); }
     function saveHistoryLogs(dateStr, logs) {
       const history = getHistoryLogs();
-      const existingIndex = history.findIndex(entry => entry.date === dateStr);
-      if (existingIndex >= 0) { history[existingIndex].logs = logs; }
-      else { history.push({ date: dateStr, logs }); }
+      const idx = history.findIndex(e => e.date === dateStr);
+      if (idx >= 0) history[idx].logs = logs; else history.push({ date: dateStr, logs });
       localStorage.setItem(TIME_HISTORY_KEY, JSON.stringify(history));
     }
     function saveReflection(reflection) {
@@ -907,8 +900,8 @@ Licensed under GNU Affero General Public License v3.0
         const sub = log.subcategory || { name: cat.name, emoji: cat.emoji };
         const li = document.createElement('li');
         li.className = 'log-item';
-        const deleteBtnDisabled = (currentViewDate !== getTodayStr()) ? 'disabled' : '';
-        li.innerHTML = `<span>${cat.emoji} ${cat.name} - ${sub.emoji} ${sub.name} &nbsp; ${formatTime(log.start)} - ${formatTime(log.end)} &nbsp; (${formatDuration(log.duration)})</span><button class="delete-log" data-index="${idx}" ${deleteBtnDisabled}>🗑️</button>`;
+        const dis = (currentViewDate !== getTodayStr()) ? 'disabled' : '';
+        li.innerHTML = `<span>${cat.emoji} ${cat.name} - ${sub.emoji} ${sub.name} &nbsp; ${formatTime(log.start)} - ${formatTime(log.end)} &nbsp; (${formatDuration(log.duration)})</span><button class="delete-log" data-index="${idx}" ${dis}>🗑️</button>`;
         list.appendChild(li);
       });
       document.querySelectorAll('.delete-log').forEach(btn => {
@@ -917,9 +910,7 @@ Licensed under GNU Affero General Public License v3.0
           const idx = +this.dataset.index;
           const logs = getLogsForDate(getTodayStr());
           logs.splice(idx, 1);
-          saveTodayLogs(logs);
-          saveHistoryLogs(getTodayStr(), logs);
-          loadTimeLogsForDate(getTodayStr());
+          saveTodayLogs(logs); saveHistoryLogs(getTodayStr(), logs); loadTimeLogsForDate(getTodayStr());
         });
       });
     }
@@ -938,8 +929,7 @@ Licensed under GNU Affero General Public License v3.0
     function showSubcategoryModal(catIndex) {
       if (currentViewDate !== getTodayStr()) return;
       const cat = categories[catIndex];
-      const modal = document.createElement('div');
-      modal.className = 'modal';
+      const modal = document.createElement('div'); modal.className = 'modal';
       let subBtnsHtml = '';
       cat.subcategories.forEach(sub => {
         subBtnsHtml += `<button class="sub-btn" data-subname="${sub.name}" data-subemoji="${sub.emoji || '📌'}" data-custom="${sub.custom || false}">${sub.emoji || ''} ${sub.name}</button>`;
@@ -974,18 +964,29 @@ Licensed under GNU Affero General Public License v3.0
       document.querySelectorAll('.cat-btn').forEach((btn, i) => { btn.classList.toggle('active', i === catIndex); });
       stopTimerBtn.style.display = 'inline-block';
       updateTimerDisplay();
+      if (timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(updateTimerDisplay, 1000);
     }
     function stopTimer() {
-      if (!currentTimer) return;
-      const endTime = Date.now();
-      const log = { category: currentTimer.categoryIndex, subcategory: currentTimer.subcategory, start: currentTimer.startTime, end: endTime, duration: Math.floor((endTime - currentTimer.startTime) / 1000) };
-      const logs = getLogsForDate(getTodayStr());
-      logs.push(log);
-      saveTodayLogs(logs);
-      saveHistoryLogs(getTodayStr(), logs);
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      if (currentTimer) {
+        const endTime = Date.now();
+        const log = {
+          category: currentTimer.categoryIndex,
+          subcategory: currentTimer.subcategory,
+          start: currentTimer.startTime,
+          end: endTime,
+          duration: Math.floor((endTime - currentTimer.startTime) / 1000)
+        };
+        const logs = getLogsForDate(getTodayStr());
+        logs.push(log);
+        saveTodayLogs(logs);
+        saveHistoryLogs(getTodayStr(), logs);
+      }
       currentTimer = null;
-      clearInterval(timerInterval);
       document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
       stopTimerBtn.style.display = 'none';
       document.getElementById('timerDisplay').textContent = '选择活动开始计时';
@@ -1001,12 +1002,7 @@ Licensed under GNU Affero General Public License v3.0
       const sub = currentTimer.subcategory;
       document.getElementById('timerDisplay').textContent = `⏳ ${cat.emoji} ${cat.name} - ${sub.emoji} ${sub.name} ${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
     }
-    function formatDuration(seconds) {
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
-      if (h > 0) return `${h}h ${m}m`;
-      return `${m}分`;
-    }
+    function formatDuration(seconds) { const h = Math.floor(seconds / 3600); const m = Math.floor((seconds % 3600) / 60); if (h > 0) return `${h}h ${m}m`; return `${m}分`; }
     function formatTime(ts) { return new Date(ts).toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' }); }
 
     // ========== 今日复盘 ==========
@@ -1021,10 +1017,8 @@ Licensed under GNU Affero General Public License v3.0
         let maxCatIdx = null, maxTime = 0;
         for (let [cat, time] of Object.entries(catDurations)) { if (time > maxTime) { maxTime = time; maxCatIdx = +cat; } }
         const cat = categories[maxCatIdx];
-        const hrs = Math.floor(maxTime / 3600);
-        const mins = Math.floor((maxTime % 3600) / 60);
-        const timeStr = hrs > 0 ? `${hrs}小时${mins}分钟` : `${mins}分钟`;
-        praise = praiseMap[cat.name] || `今天你在${cat.name}上投入了${timeStr}。`;
+        const hrs = Math.floor(maxTime / 3600); const mins = Math.floor((maxTime % 3600) / 60);
+        praise = praiseMap[cat.name] || `今天你在${cat.name}上投入了${hrs > 0 ? hrs + '小时' + mins + '分钟' : mins + '分钟'}。`;
       }
       let statsHtml = '';
       categories.forEach((cat, idx) => {
@@ -1032,8 +1026,7 @@ Licensed under GNU Affero General Public License v3.0
         const percent = totalSeconds > 0 ? (sec / totalSeconds * 100).toFixed(1) : 0;
         statsHtml += `<div class="stat-bar"><span class="emoji">${cat.emoji}</span><span style="width:40px;font-size:0.8rem;">${formatDuration(sec)}</span><div class="bar-bg"><div class="bar-fill" style="width:${percent}%;background:${cat.color};"></div></div></div>`;
       });
-      const modal = document.createElement('div');
-      modal.className = 'modal';
+      const modal = document.createElement('div'); modal.className = 'modal';
       modal.innerHTML = `<div class="modal-content" style="max-width:360px;"><div class="modal-emoji">📊</div><div class="modal-text">${praise}</div><div class="time-stats">${statsHtml}</div><button id="goDeepThinkBtn" class="close-modal" style="background:#e17055;margin-top:5px;">📝 深度思考·4问</button><button id="goInsightBtn" class="close-modal" style="background:#82ccdd;margin-top:5px;">💬 今日感悟</button><button class="close-modal">好的，继续加油 💪</button></div>`;
       document.body.appendChild(modal);
       modal.querySelector('#goDeepThinkBtn').addEventListener('click', () => { modal.remove(); showDeepThoughtModal(getTodayStr(), false); });
@@ -1042,35 +1035,32 @@ Licensed under GNU Affero General Public License v3.0
     }
     document.getElementById('reviewBtn').addEventListener('click', showReviewModal);
 
-    // ========== 未完成反思（已整合生活难题6问） ==========
+    // ========== 未完成反思 ==========
     function showReflectModal() {
       if (currentViewDate !== getTodayStr()) { alert('只能对今天进行反思。'); return; }
       const unfinished = tasks.filter(t => !t.completed);
       if (unfinished.length === 0) {
         const modal = document.createElement('div'); modal.className = 'modal';
         modal.innerHTML = `<div class="modal-content"><div class="modal-emoji">🎉</div><div class="modal-text">今天的任务都完成了！你太了不起了！</div><button class="close-modal">收下赞美 💖</button></div>`;
-        document.body.appendChild(modal);
-        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        document.body.appendChild(modal); modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
         return;
       }
       let taskListHtml = '<ul style="text-align:left;margin:10px 0;">';
-      unfinished.forEach(task => taskListHtml += `<li style="background:#fff3f3;margin:5px 0;padding:5px 10px;border-radius:10px;">📌 ${escapeHtml(task.text)}</li>`);
+      unfinished.forEach(t => taskListHtml += `<li style="background:#fff3f3;margin:5px 0;padding:5px 10px;border-radius:10px;">📌 ${escapeHtml(t.text)}</li>`);
       taskListHtml += '</ul>';
       const modal = document.createElement('div'); modal.className = 'modal';
       modal.innerHTML = `<div class="modal-content" style="max-width:380px;"><div class="modal-emoji">🤔</div><div class="modal-text">这些事还没做，不想动的原因？</div>${taskListHtml}<button class="reason-btn" data-reason="too_much">📋 任务太多了</button><button class="reason-btn" data-reason="special">💔 特殊原因</button><button class="reason-btn" data-reason="lazy">😴 单纯不想做</button><button id="goLifeAnalysisBtn" class="reason-btn" style="background:#e17055; color:white; text-align:center;">🔍 深入分析 · 生活难题6问</button><button class="close-modal" style="margin-top:8px;">先不想了</button></div>`;
       document.body.appendChild(modal);
-      const feedbackMessages = { too_much: "任务确实有点多，不是你懒，是计划可以更温柔。", special: "特殊状况谁都会遇到，这不是你的问题。先照顾好自己。", lazy: "偶尔不想做太正常了。试试只做5分钟，只要开始，就已经赢了。" };
-      const handleReasonClick = (reason) => {
-        saveReflection({ date: getTodayStr(), reason, unfinishedTasks: unfinished.map(t => t.text), timestamp: new Date().toISOString() });
-        modal.remove();
-        const feedbackModal = document.createElement('div'); feedbackModal.className = 'modal';
-        feedbackModal.innerHTML = `<div class="modal-content"><div class="modal-emoji">💬</div><div class="modal-text">${feedbackMessages[reason]}</div><button class="close-modal">好的 🌱</button></div>`;
-        document.body.appendChild(feedbackModal);
-        feedbackModal.querySelector('.close-modal').addEventListener('click', () => feedbackModal.remove());
-      };
+      const feedback = { too_much: "任务确实有点多，不是你懒，是计划可以更温柔。", special: "特殊状况谁都会遇到，这不是你的问题。先照顾好自己。", lazy: "偶尔不想做太正常了。试试只做5分钟，只要开始，就已经赢了。" };
       modal.querySelectorAll('.reason-btn').forEach(btn => {
         if (btn.id === 'goLifeAnalysisBtn') return;
-        btn.addEventListener('click', (e) => handleReasonClick(e.target.dataset.reason));
+        btn.addEventListener('click', (e) => {
+          saveReflection({ date: getTodayStr(), reason: e.target.dataset.reason, unfinishedTasks: unfinished.map(t => t.text), timestamp: new Date().toISOString() });
+          modal.remove();
+          const fm = document.createElement('div'); fm.className = 'modal';
+          fm.innerHTML = `<div class="modal-content"><div class="modal-emoji">💬</div><div class="modal-text">${feedback[e.target.dataset.reason]}</div><button class="close-modal">好的 🌱</button></div>`;
+          document.body.appendChild(fm); fm.querySelector('.close-modal').addEventListener('click', () => fm.remove());
+        });
       });
       modal.querySelector('#goLifeAnalysisBtn').addEventListener('click', () => { modal.remove(); showLifeAnalysisModal(getTodayStr(), false); });
       modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
@@ -1079,14 +1069,12 @@ Licensed under GNU Affero General Public License v3.0
 
     // ========== 成长曲线 ==========
     function getDateRange(type) {
-      const today = new Date();
-      const dates = [];
-      let start = new Date(today);
+      const today = new Date(); const dates = []; let start = new Date(today);
       if (type === 'week') { const day = today.getDay() || 7; start.setDate(today.getDate() - day + 1); }
-      else if (type === 'month') { start = new Date(today.getFullYear(), today.getMonth(), 1); }
-      else if (type === 'quarter') { const quarterMonth = Math.floor(today.getMonth() / 3) * 3; start = new Date(today.getFullYear(), quarterMonth, 1); }
-      else if (type === 'half') { start.setDate(today.getDate() - 182); }
-      else if (type === 'year') { start = new Date(today.getFullYear(), 0, 1); }
+      else if (type === 'month') start = new Date(today.getFullYear(), today.getMonth(), 1);
+      else if (type === 'quarter') { const qm = Math.floor(today.getMonth() / 3) * 3; start = new Date(today.getFullYear(), qm, 1); }
+      else if (type === 'half') start.setDate(today.getDate() - 182);
+      else if (type === 'year') start = new Date(today.getFullYear(), 0, 1);
       while (start <= today) { dates.push(new Date(start).toISOString().split('T')[0]); start.setDate(start.getDate() + 1); }
       return dates;
     }
@@ -1098,37 +1086,34 @@ Licensed under GNU Affero General Public License v3.0
       history.forEach(entry => { if (dataByDate[entry.date]) entry.logs.forEach(log => { dataByDate[entry.date][log.category] = (dataByDate[entry.date][log.category] || 0) + log.duration; }); });
       const todayLogs = getLogsForDate(getTodayStr());
       if (dataByDate[getTodayStr()]) todayLogs.forEach(log => { dataByDate[getTodayStr()][log.category] += log.duration; });
-      const canvas = document.getElementById('growthCanvas');
-      const container = canvas.parentNode;
-      canvas.width = container.clientWidth - 20;
-      canvas.height = 220;
-      const c = canvas.getContext('2d');
-      c.clearRect(0, 0, canvas.width, canvas.height);
+      const gCanvas = document.getElementById('growthCanvas');
+      const container = gCanvas.parentNode;
+      gCanvas.width = container.clientWidth - 20; gCanvas.height = 220;
+      const c = gCanvas.getContext('2d');
+      c.clearRect(0, 0, gCanvas.width, gCanvas.height);
       if (dates.length === 0) return;
       const padding = { top: 20, right: 20, bottom: 40, left: 40 };
-      const chartWidth = canvas.width - padding.left - padding.right;
-      const chartHeight = canvas.height - padding.top - padding.bottom;
-      let maxDuration = 0;
-      dates.forEach(date => { categories.forEach((_, i) => { maxDuration = Math.max(maxDuration, dataByDate[date][i]); }); });
-      maxDuration = Math.ceil(maxDuration / 600) * 600;
-      if (maxDuration === 0) maxDuration = 600;
-      c.strokeStyle = '#ccc'; c.lineWidth = 1; c.beginPath(); c.moveTo(padding.left, padding.top); c.lineTo(padding.left, canvas.height - padding.bottom); c.lineTo(canvas.width - padding.right, canvas.height - padding.bottom); c.stroke();
+      const cw = gCanvas.width - padding.left - padding.right;
+      const ch = gCanvas.height - padding.top - padding.bottom;
+      let maxD = 0;
+      dates.forEach(date => { categories.forEach((_, i) => { maxD = Math.max(maxD, dataByDate[date][i]); }); });
+      maxD = Math.ceil(maxD / 600) * 600; if (maxD === 0) maxD = 600;
+      c.strokeStyle = '#ccc'; c.lineWidth = 1; c.beginPath(); c.moveTo(padding.left, padding.top); c.lineTo(padding.left, gCanvas.height - padding.bottom); c.lineTo(gCanvas.width - padding.right, gCanvas.height - padding.bottom); c.stroke();
       c.fillStyle = '#888'; c.font = '10px sans-serif'; c.textAlign = 'right';
-      const ySteps = 4;
-      for (let i = 0; i <= ySteps; i++) { const y = padding.top + (chartHeight / ySteps) * i; c.fillText(Math.round(maxDuration - (maxDuration / ySteps) * i) + '秒', padding.left - 5, y + 3); if (i > 0) { c.strokeStyle = '#eee'; c.beginPath(); c.moveTo(padding.left, y); c.lineTo(canvas.width - padding.right, y); c.stroke(); } }
-      c.fillStyle = '#888'; c.textAlign = 'center'; const step = Math.max(1, Math.floor(dates.length / 6));
-      dates.forEach((date, idx) => { if (idx % step === 0 || idx === dates.length - 1) { c.fillText(date.slice(5), padding.left + (chartWidth / (dates.length - 1)) * idx, canvas.height - padding.bottom + 15); } });
-      categories.forEach((cat, catIdx) => { c.strokeStyle = cat.color; c.lineWidth = 2; c.beginPath(); dates.forEach((date, idx) => { const x = padding.left + (chartWidth / (dates.length - 1)) * idx; const y = padding.top + chartHeight - (dataByDate[date][catIdx] / maxDuration) * chartHeight; if (idx === 0) c.moveTo(x, y); else c.lineTo(x, y); }); c.stroke(); c.fillStyle = cat.color; c.fillRect(padding.left + 10 + catIdx * 50, 5, 10, 10); c.fillStyle = '#333'; c.font = '9px sans-serif'; c.fillText(cat.emoji, padding.left + 22 + catIdx * 50, 13); });
-      let totalSeconds = 0; dates.forEach(date => { categories.forEach((_, i) => totalSeconds += dataByDate[date][i]); });
-      document.getElementById('summaryText').textContent = `总时长：${formatDuration(totalSeconds)} | 日均：${formatDuration(Math.round(totalSeconds / dates.length))}`;
+      for (let i = 0; i <= 4; i++) { const y = padding.top + (ch / 4) * i; c.fillText(Math.round(maxD - (maxD / 4) * i) + '秒', padding.left - 5, y + 3); if (i > 0) { c.strokeStyle = '#eee'; c.beginPath(); c.moveTo(padding.left, y); c.lineTo(gCanvas.width - padding.right, y); c.stroke(); } }
+      c.fillStyle = '#888'; c.textAlign = 'center';
+      const step = Math.max(1, Math.floor(dates.length / 6));
+      dates.forEach((date, idx) => { if (idx % step === 0 || idx === dates.length - 1) c.fillText(date.slice(5), padding.left + (cw / (dates.length - 1)) * idx, gCanvas.height - padding.bottom + 15); });
+      categories.forEach((cat, catIdx) => { c.strokeStyle = cat.color; c.lineWidth = 2; c.beginPath(); dates.forEach((date, idx) => { const x = padding.left + (cw / (dates.length - 1)) * idx; const y = padding.top + ch - (dataByDate[date][catIdx] / maxD) * ch; if (idx === 0) c.moveTo(x, y); else c.lineTo(x, y); }); c.stroke(); c.fillStyle = cat.color; c.fillRect(padding.left + 10 + catIdx * 50, 5, 10, 10); c.fillText(cat.emoji, padding.left + 22 + catIdx * 50, 13); });
+      let total = 0; dates.forEach(date => { categories.forEach((_, i) => total += dataByDate[date][i]); });
+      document.getElementById('summaryText').textContent = `总时长：${formatDuration(total)} | 日均：${formatDuration(Math.round(total / dates.length))}`;
     }
     function showGrowthModal() {
       const modal = document.createElement('div'); modal.className = 'modal';
       modal.innerHTML = `<div class="modal-content" style="max-width:400px;"><div class="modal-emoji">📈</div><div style="font-weight:bold;margin-bottom:10px;">成长曲线</div><div class="range-buttons" id="rangeButtons"><button class="range-btn active" data-range="week">本周</button><button class="range-btn" data-range="month">本月</button><button class="range-btn" data-range="quarter">本季度</button><button class="range-btn" data-range="half">半年</button><button class="range-btn" data-range="year">今年</button></div><canvas id="growthCanvas" style="width:100%;height:220px;"></canvas><div class="summary-text" id="summaryText"></div><button class="close-modal" style="margin-top:10px;">返回</button></div>`;
       document.body.appendChild(modal);
-      let currentRange = 'week';
-      function updateChart(range) { currentRange = range; modal.querySelectorAll('.range-btn').forEach(btn => btn.classList.remove('active')); modal.querySelector(`[data-range="${range}"]`).classList.add('active'); drawGrowthChart(range); }
-      modal.querySelectorAll('.range-btn').forEach(btn => { btn.addEventListener('click', (e) => updateChart(e.target.dataset.range)); });
+      let cr = 'week';
+      modal.querySelectorAll('.range-btn').forEach(btn => btn.addEventListener('click', (e) => { cr = e.target.dataset.range; modal.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); drawGrowthChart(cr); }));
       modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
       setTimeout(() => drawGrowthChart('week'), 100);
     }
