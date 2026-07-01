@@ -114,7 +114,7 @@ Licensed under GNU Affero General Public License v3.0
     .delete-btn:hover { color: #ff6b6b; }
 
     .action-buttons { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
-    .review-btn, .growth-btn, .reflect-btn, .deep-think-btn, .export-btn, .import-btn, .export-txt-btn {
+    .review-btn, .growth-btn, .reflect-btn, .deep-think-btn, .export-btn, .import-btn, .export-txt-btn, .question-btn {
       border: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; color: white;
       cursor: pointer; font-size: 0.95rem; box-shadow: 0 8px 18px rgba(0,0,0,0.2); transition: all 0.2s;
       white-space: nowrap;
@@ -123,10 +123,11 @@ Licensed under GNU Affero General Public License v3.0
     .growth-btn { background: #74b9ff; }
     .reflect-btn { background: #fdcb6e; color: #333; }
     .deep-think-btn { background: #e17055; }
+    .question-btn { background: #fd79a8; }
     .export-btn { background: #00b894; }
     .import-btn { background: #6c5ce7; }
     .export-txt-btn { background: #0984e3; }
-    .review-btn:hover, .growth-btn:hover, .reflect-btn:hover, .deep-think-btn:hover, .export-btn:hover, .import-btn:hover, .export-txt-btn:hover { transform: scale(1.03); }
+    .review-btn:hover, .growth-btn:hover, .reflect-btn:hover, .deep-think-btn:hover, .export-btn:hover, .import-btn:hover, .export-txt-btn:hover, .question-btn:hover { transform: scale(1.03); }
 
     .modal {
       position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5);
@@ -162,6 +163,34 @@ Licensed under GNU Affero General Public License v3.0
     }
     .action-guide-area textarea:focus { border-color: #e17055; }
 
+    /* 今日问题栏样式 */
+    .question-entry {
+      background: #f8f9fa; border-radius: 16px; padding: 14px; margin-bottom: 12px; text-align: left;
+      border-left: 4px solid #fd79a8;
+    }
+    .question-entry .q { font-weight: bold; color: #2d3436; margin-bottom: 4px; display: flex; gap: 6px; }
+    .question-entry .q .q-label { color: #fd79a8; }
+    .question-entry .a { color: #555; padding-left: 6px; font-size: 0.95rem; }
+    .question-entry .q-delete {
+      background: none; border: none; color: #ccc; font-size: 1.2rem; cursor: pointer;
+      margin-left: auto; padding: 0 4px;
+    }
+    .question-entry .q-delete:hover { color: #e74c3c; }
+    .question-input-row { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .question-input-row input, .question-input-row textarea {
+      width: 100%; padding: 10px 14px; border: 2px solid #ddd; border-radius: 16px;
+      font-size: 0.95rem; font-family: inherit; outline: none; transition: 0.2s;
+    }
+    .question-input-row input:focus, .question-input-row textarea:focus { border-color: #fd79a8; }
+    .question-input-row textarea { resize: vertical; min-height: 50px; }
+    .question-add-btn {
+      background: #fd79a8; border: none; color: white; padding: 10px 20px;
+      border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+      align-self: flex-end; transition: 0.2s;
+    }
+    .question-add-btn:hover { transform: scale(1.03); }
+    .question-empty { color: #aaa; font-size: 0.95rem; padding: 20px 0; }
+
     .float-praise {
       position: fixed; font-weight: bold; color: #ff5e7e; animation: floatUp 2s ease-out forwards;
       z-index: 999; font-size: 1.6rem; pointer-events: none;
@@ -186,13 +215,13 @@ Licensed under GNU Affero General Public License v3.0
     .range-btn.active { background: #74b9ff; color: white; }
     canvas#growthCanvas { width: 100%; height: auto; border-radius: 20px; margin-top: 10px; }
     .summary-text { font-size: 0.9rem; color: #555; margin: 10px 0; }
-    
+
     .reason-btn {
       display: block; width: 100%; background: #f5f5f5; border: none; padding: 12px; margin: 6px 0;
       border-radius: 15px; font-size: 0.95rem; cursor: pointer; text-align: left; transition: 0.2s;
     }
     .reason-btn:hover { background: #ffe0e0; }
-    
+
     .sub-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 15px; }
     .sub-btn {
       background: #f0f0f0; border: 2px solid #ddd; padding: 8px 16px; border-radius: 20px;
@@ -202,15 +231,16 @@ Licensed under GNU Affero General Public License v3.0
     .custom-input-area { display: flex; gap: 8px; margin-top: 15px; }
     .custom-input-area input { flex: 1; padding: 8px 12px; border-radius: 15px; border: 2px solid #ddd; font-size: 0.9rem; }
     .custom-input-area button { padding: 8px 16px; border-radius: 15px; border: none; background: #a29bfe; color: white; font-weight: bold; }
-    
+
     .history-note { color: #e17055; font-size: 0.9rem; margin: 10px 0; }
-    
-    .view-deep-btn, .view-insight-btn {
+
+    .view-deep-btn, .view-insight-btn, .view-question-btn {
       border: none; border-radius: 20px; padding: 8px 20px; font-weight: bold; color: white;
       margin: 5px; cursor: pointer; font-size: 0.9rem;
     }
     .view-deep-btn { background: #f8c291; }
     .view-insight-btn { background: #82ccdd; }
+    .view-question-btn { background: #fd79a8; }
   </style>
 </head>
 <body>
@@ -241,6 +271,7 @@ Licensed under GNU Affero General Public License v3.0
     <div class="action-buttons" id="actionButtons">
       <button class="review-btn" id="reviewBtn">✨ 今日复盘</button>
       <button class="deep-think-btn" id="deepThinkBtn">🧠 深度思考·4问</button>
+      <button class="question-btn" id="questionBtn">📝 今日问题</button>
       <button class="growth-btn" id="growthBtn">📈 成长曲线</button>
       <button class="reflect-btn" id="reflectBtn">📝 未完成反思</button>
       <button class="export-btn" id="exportBtn">💾 导出数据</button>
@@ -316,6 +347,7 @@ Licensed under GNU Affero General Public License v3.0
         dailyInsights: JSON.parse(localStorage.getItem('daily_insights') || 'null'),
         lifeAnalysis: JSON.parse(localStorage.getItem('life_analysis') || 'null'),
         reflections: JSON.parse(localStorage.getItem('daily_reflections') || 'null'),
+        dailyQuestions: JSON.parse(localStorage.getItem('daily_questions') || 'null'),
       };
       const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -338,6 +370,7 @@ Licensed under GNU Affero General Public License v3.0
       const dailyInsights = JSON.parse(localStorage.getItem('daily_insights') || '[]');
       const lifeAnalysis = JSON.parse(localStorage.getItem('life_analysis') || '[]');
       const reflections = JSON.parse(localStorage.getItem('daily_reflections') || '[]');
+      const dailyQuestions = JSON.parse(localStorage.getItem('daily_questions') || '[]');
 
       let text = '夸夸清单 - 纯文本导出\n';
       text += `导出日期：${new Date().toLocaleString()}\n`;
@@ -392,16 +425,21 @@ Licensed under GNU Affero General Public License v3.0
         text += '\n';
       }
 
-      // 深度思考
+      // 深度思考（新四问）
       text += '【深度思考·4问】\n';
       if (deepThoughts.length === 0) {
         text += '（无记录）\n\n';
       } else {
+        const qs = [
+          '1. 今天事情做完和没做完的原因是什么？有什么可以去迭代的地方？',
+          '2. 今天哪件事，我的预判和实际结果不一样？',
+          '3. 我当时下意识的信念是什么？',
+          '4. 下次再遇到，我可以怎么调整预设？'
+        ];
         deepThoughts.forEach(entry => {
           text += `\n📅 ${entry.date}\n`;
-          const q = ['1. 这件事的本质是什么？', '2. 这件事有没有长期价值？', '3. 这件事的终局是什么？', '4. 有没有反例？运用的边界是什么？'];
           entry.answers.forEach((ans, i) => {
-            text += `${q[i]}\n  ${ans || '（未填写）'}\n\n`;
+            text += `${qs[i] || `问题${i+1}`}\n  ${ans || '（未填写）'}\n\n`;
           });
         });
       }
@@ -443,6 +481,24 @@ Licensed under GNU Affero General Public License v3.0
           text += `📅 ${ref.date}  ${ref.timestamp ? new Date(ref.timestamp).toLocaleTimeString('zh-CN') : ''}\n`;
           text += `原因：${ref.reason === 'too_much' ? '任务太多' : ref.reason === 'special' ? '特殊原因' : ref.reason === 'lazy' ? '单纯不想做' : ref.reason}\n`;
           text += `未完成任务：${ref.unfinishedTasks ? ref.unfinishedTasks.join('、') : '无'}\n\n`;
+        });
+      }
+
+      // 今日问题栏
+      text += '【今日问题栏】\n';
+      if (dailyQuestions.length === 0) {
+        text += '（无记录）\n\n';
+      } else {
+        dailyQuestions.forEach(day => {
+          text += `\n📅 ${day.date}\n`;
+          if (day.entries && day.entries.length > 0) {
+            day.entries.forEach(e => {
+              text += `❓ ${e.question}\n`;
+              text += `💬 ${e.answer || '（未回答）'}\n\n`;
+            });
+          } else {
+            text += '  无条目\n';
+          }
         });
       }
 
@@ -493,6 +549,8 @@ Licensed under GNU Affero General Public License v3.0
           else localStorage.removeItem('life_analysis');
           if (data.reflections) localStorage.setItem('daily_reflections', JSON.stringify(data.reflections));
           else localStorage.removeItem('daily_reflections');
+          if (data.dailyQuestions) localStorage.setItem('daily_questions', JSON.stringify(data.dailyQuestions));
+          else localStorage.removeItem('daily_questions');
           showSimpleModal('✅', '数据已成功导入！页面即将刷新。');
           setTimeout(() => { window.location.reload(); }, 1500);
         });
@@ -563,15 +621,17 @@ Licensed under GNU Affero General Public License v3.0
         document.querySelectorAll('.checkbox').forEach(cb => cb.disabled = true);
         document.querySelectorAll('.delete-btn').forEach(btn => btn.disabled = true);
         document.querySelectorAll('.delete-log').forEach(btn => btn.disabled = true);
-        
+
         let html = '';
         if (getDeepThought(currentViewDate)) html += `<button class="view-deep-btn" id="viewDeepHistoryBtn">📖 深度思考</button>`;
         if (getDailyInsight(currentViewDate)) html += `<button class="view-insight-btn" id="viewInsightHistoryBtn">💬 今日感悟</button>`;
         if (getLifeAnalysis(currentViewDate)) html += `<button class="view-deep-btn" id="viewLifeAnalysisHistoryBtn" style="background:#e17055;">🔍 生活难题分析</button>`;
+        if (getDailyQuestionsForDate(currentViewDate)) html += `<button class="view-question-btn" id="viewQuestionHistoryBtn">📝 今日问题</button>`;
         viewDeepBtnContainer.innerHTML = html;
         if (document.getElementById('viewDeepHistoryBtn')) document.getElementById('viewDeepHistoryBtn').addEventListener('click', () => showDeepThoughtModal(currentViewDate, true));
         if (document.getElementById('viewInsightHistoryBtn')) document.getElementById('viewInsightHistoryBtn').addEventListener('click', () => showInsightModal(currentViewDate, true));
         if (document.getElementById('viewLifeAnalysisHistoryBtn')) document.getElementById('viewLifeAnalysisHistoryBtn').addEventListener('click', () => showLifeAnalysisModal(currentViewDate, true));
+        if (document.getElementById('viewQuestionHistoryBtn')) document.getElementById('viewQuestionHistoryBtn').addEventListener('click', () => showQuestionModal(currentViewDate, true));
       }
       document.querySelector('.time-section h3').innerHTML = isToday ? '⏱️ 时间记录' : '⏱️ 历史时间记录';
     }
@@ -608,21 +668,8 @@ Licensed under GNU Affero General Public License v3.0
         }
       }
     }
-    const TASK_REMIND_KEY = 'task_remind_ids';
-    function checkTaskOverdueReminders() {
-      let reminded = JSON.parse(localStorage.getItem(TASK_REMIND_KEY) || '[]');
-      const now = Date.now();
-      const todayTasks = loadTasksData(getTodayStr());
-      let updated = false;
-      todayTasks.forEach(task => {
-        if (!task.completed && task.addedAt && (now - task.addedAt >= 7200000) && !reminded.includes(task.id)) {
-          sendNotification('⏳ 任务延期', `任务"${task.text}"已经超过2小时了。`);
-          reminded.push(task.id); updated = true;
-        }
-      });
-      if (updated) localStorage.setItem(TASK_REMIND_KEY, JSON.stringify(reminded));
-    }
-    function runReminders() { checkEveningReminder(); checkTaskOverdueReminders(); }
+    // ★★★ 已移除2小时任务提醒功能，只保留晚上10:30提醒 ★★★
+    function runReminders() { checkEveningReminder(); }
 
     // ========== 夸夸语库 ==========
     const dailyPraises = [
@@ -663,7 +710,7 @@ Licensed under GNU Affero General Public License v3.0
     if (shouldShowDailyPraise()) setTimeout(showDailyModal, 600);
     document.getElementById('showDailyBtn').addEventListener('click', showDailyModal);
 
-    // ========== 深度思考模块 ==========
+    // ========== 深度思考模块（新四问） ==========
     const DEEP_THINK_KEY = 'deep_thoughts';
     function getDeepThought(dateStr) {
       const stored = localStorage.getItem(DEEP_THINK_KEY);
@@ -680,11 +727,12 @@ Licensed under GNU Affero General Public License v3.0
     function showDeepThoughtModal(dateStr, readOnly = false) {
       const deepData = getDeepThought(dateStr);
       const answers = deepData ? deepData.answers : ['', '', '', ''];
+      // ★★★ 新四问 ★★★
       const questions = [
-        { label: '1. 这件事的本质是什么？', hint: '剥开表象，看到最核心的问题或原理。' },
-        { label: '2. 这件事有没有长期价值？', hint: '放到5年、10年来看，它是否依然重要？' },
-        { label: '3. 这件事的终局是什么？', hint: '如果完全按预期发展，最终会通向哪里？' },
-        { label: '4. 有没有反例？运用的边界是什么？', hint: '在什么条件下它会失效？适用范围在哪？' }
+        { label: '1. 今天事情做完和没做完的原因是什么？有什么可以去迭代的地方？', hint: '回顾今天的完成情况，分析原因，找到改进点。' },
+        { label: '2. 今天哪件事，我的预判和实际结果不一样？', hint: '找出预期与现实的差距，看到认知的盲区。' },
+        { label: '3. 我当时下意识的信念是什么？', hint: '觉察自己当时的潜在信念，看见内心的预设。' },
+        { label: '4. 下次再遇到，我可以怎么调整预设？', hint: '基于反思，调整未来的预设，让行动更有效。' }
       ];
       const modal = document.createElement('div'); modal.className = 'modal';
       let html = '';
@@ -791,6 +839,140 @@ Licensed under GNU Affero General Public License v3.0
       modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => modal.remove()));
     }
 
+    // ========== ★★★ 今日问题栏（新增） ★★★ ==========
+    const QUESTION_KEY = 'daily_questions';
+
+    function getDailyQuestionsForDate(dateStr) {
+      const stored = localStorage.getItem(QUESTION_KEY);
+      if (!stored) return null;
+      try {
+        const data = JSON.parse(stored);
+        const found = data.find(d => d.date === dateStr);
+        return found ? found.entries : null;
+      } catch(e) { return null; }
+    }
+
+    function getAllDailyQuestions() {
+      const stored = localStorage.getItem(QUESTION_KEY);
+      if (!stored) return [];
+      try { return JSON.parse(stored); } catch(e) { return []; }
+    }
+
+    function saveDailyQuestionsForDate(dateStr, entries) {
+      const stored = localStorage.getItem(QUESTION_KEY);
+      let data = stored ? JSON.parse(stored) : [];
+      const idx = data.findIndex(d => d.date === dateStr);
+      if (idx >= 0) {
+        data[idx].entries = entries;
+      } else {
+        data.push({ date: dateStr, entries });
+      }
+      localStorage.setItem(QUESTION_KEY, JSON.stringify(data));
+    }
+
+    function addQuestionEntry(dateStr, question, answer) {
+      const entries = getDailyQuestionsForDate(dateStr) || [];
+      const newEntry = { id: Date.now() + '_' + Math.random().toString(36).substr(2, 6), question: question.trim(), answer: answer.trim() };
+      entries.push(newEntry);
+      saveDailyQuestionsForDate(dateStr, entries);
+      return entries;
+    }
+
+    function deleteQuestionEntry(dateStr, id) {
+      let entries = getDailyQuestionsForDate(dateStr) || [];
+      entries = entries.filter(e => e.id !== id);
+      saveDailyQuestionsForDate(dateStr, entries);
+      return entries;
+    }
+
+    function showQuestionModal(dateStr, readOnly = false) {
+      const entries = getDailyQuestionsForDate(dateStr) || [];
+      const isToday = (dateStr === getTodayStr());
+
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      let listHtml = '';
+      if (entries.length === 0) {
+        listHtml = `<div class="question-empty">还没有记录，写下你的第一个问题吧 ✍️</div>`;
+      } else {
+        entries.forEach(e => {
+          listHtml += `
+            <div class="question-entry">
+              <div class="q">
+                <span class="q-label">❓</span>
+                <span>${escapeHtml(e.question)}</span>
+                ${!readOnly ? `<button class="q-delete" data-id="${e.id}">🗑️</button>` : ''}
+              </div>
+              <div class="a">💬 ${escapeHtml(e.answer || '（未回答）')}</div>
+            </div>
+          `;
+        });
+      }
+
+      const addFormHtml = !readOnly ? `
+        <div class="question-input-row">
+          <input type="text" id="qInput" placeholder="写下你的问题..." />
+          <textarea id="aInput" rows="2" placeholder="你的回答..."></textarea>
+          <button class="question-add-btn" id="addQuestionBtn">➕ 添加</button>
+        </div>
+      ` : '';
+
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width:400px;">
+          <div class="modal-emoji">📝</div>
+          <div style="font-weight:bold;">今日问题栏</div>
+          <div style="color:#888;font-size:0.85rem;margin-bottom:10px;">${dateStr} ${readOnly ? '（只读）' : ''}</div>
+          <div id="questionListContainer">${listHtml}</div>
+          ${addFormHtml}
+          <button class="close-modal" style="margin-top:12px;">${readOnly ? '返回' : '关闭'}</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // 删除事件
+      if (!readOnly) {
+        modal.querySelectorAll('.q-delete').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const newEntries = deleteQuestionEntry(dateStr, id);
+            // 刷新列表
+            modal.remove();
+            showQuestionModal(dateStr, false);
+          });
+        });
+
+        // 添加事件
+        modal.querySelector('#addQuestionBtn').addEventListener('click', function() {
+          const q = document.getElementById('qInput').value.trim();
+          const a = document.getElementById('aInput').value.trim();
+          if (!q) { showSimpleModal('💡', '请先写下问题。'); return; }
+          addQuestionEntry(dateStr, q, a);
+          modal.remove();
+          showQuestionModal(dateStr, false);
+        });
+
+        // 回车快捷添加
+        modal.querySelector('#qInput').addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            const a = document.getElementById('aInput');
+            if (a.value.trim()) {
+              document.getElementById('addQuestionBtn').click();
+            } else {
+              a.focus();
+            }
+          }
+        });
+      }
+
+      modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => modal.remove()));
+    }
+
+    // 今日问题按钮
+    document.getElementById('questionBtn').addEventListener('click', () => {
+      if (currentViewDate !== getTodayStr()) { alert('只能对今天记录问题。'); return; }
+      showQuestionModal(getTodayStr(), false);
+    });
+
     // ========== 任务数据管理 ==========
     const TASKS_KEY = 'daily_tasks';
     function loadTasksData(dateStr) {
@@ -801,10 +983,6 @@ Licensed under GNU Affero General Public License v3.0
     function saveTasksData(dateStr, items) {
       if (dateStr !== getTodayStr()) return;
       localStorage.setItem(TASKS_KEY, JSON.stringify({ date: dateStr, items }));
-      const reminded = JSON.parse(localStorage.getItem(TASK_REMIND_KEY) || '[]');
-      const existingIds = items.map(t => t.id);
-      const filtered = reminded.filter(id => existingIds.includes(id));
-      if (filtered.length !== reminded.length) localStorage.setItem(TASK_REMIND_KEY, JSON.stringify(filtered));
     }
     let tasks = [];
     function loadTasksForDate(dateStr) { tasks = loadTasksData(dateStr); renderTasks(); }
@@ -1027,10 +1205,11 @@ Licensed under GNU Affero General Public License v3.0
         statsHtml += `<div class="stat-bar"><span class="emoji">${cat.emoji}</span><span style="width:40px;font-size:0.8rem;">${formatDuration(sec)}</span><div class="bar-bg"><div class="bar-fill" style="width:${percent}%;background:${cat.color};"></div></div></div>`;
       });
       const modal = document.createElement('div'); modal.className = 'modal';
-      modal.innerHTML = `<div class="modal-content" style="max-width:360px;"><div class="modal-emoji">📊</div><div class="modal-text">${praise}</div><div class="time-stats">${statsHtml}</div><button id="goDeepThinkBtn" class="close-modal" style="background:#e17055;margin-top:5px;">📝 深度思考·4问</button><button id="goInsightBtn" class="close-modal" style="background:#82ccdd;margin-top:5px;">💬 今日感悟</button><button class="close-modal">好的，继续加油 💪</button></div>`;
+      modal.innerHTML = `<div class="modal-content" style="max-width:360px;"><div class="modal-emoji">📊</div><div class="modal-text">${praise}</div><div class="time-stats">${statsHtml}</div><button id="goDeepThinkBtn" class="close-modal" style="background:#e17055;margin-top:5px;">📝 深度思考·4问</button><button id="goInsightBtn" class="close-modal" style="background:#82ccdd;margin-top:5px;">💬 今日感悟</button><button id="goQuestionBtn" class="close-modal" style="background:#fd79a8;margin-top:5px;">📝 今日问题</button><button class="close-modal">好的，继续加油 💪</button></div>`;
       document.body.appendChild(modal);
       modal.querySelector('#goDeepThinkBtn').addEventListener('click', () => { modal.remove(); showDeepThoughtModal(getTodayStr(), false); });
       modal.querySelector('#goInsightBtn').addEventListener('click', () => { modal.remove(); showInsightModal(getTodayStr(), false); });
+      modal.querySelector('#goQuestionBtn').addEventListener('click', () => { modal.remove(); showQuestionModal(getTodayStr(), false); });
       modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => modal.remove()));
     }
     document.getElementById('reviewBtn').addEventListener('click', showReviewModal);
@@ -1122,9 +1301,8 @@ Licensed under GNU Affero General Public License v3.0
     // ========== 初始化 ==========
     requestNotificationPermission();
     renderCategoryButtons();
-    // ★★★ 添加停止按钮的事件绑定 ★★★
     stopTimerBtn.addEventListener('click', stopTimer);
-    
+
     setViewDate(getTodayStr());
     setInterval(runReminders, 60000);
     setTimeout(runReminders, 2000);
