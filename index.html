@@ -270,7 +270,8 @@ Licensed under GNU Affero General Public License v3.0
 
     <div class="action-buttons" id="actionButtons">
       <button class="review-btn" id="reviewBtn">✨ 今日复盘</button>
-      <button class="deep-think-btn" id="deepThinkBtn">🧠 深度思考·4问</button>
+      <!-- 按钮已重命名为“深度复盘” -->
+      <button class="deep-think-btn" id="deepReviewBtn">🧠 深度复盘·4问</button>
       <button class="question-btn" id="questionBtn">📝 今日问题</button>
       <button class="growth-btn" id="growthBtn">📈 成长曲线</button>
       <button class="reflect-btn" id="reflectBtn">📝 未完成反思</button>
@@ -344,6 +345,7 @@ Licensed under GNU Affero General Public License v3.0
         timeLogs: JSON.parse(localStorage.getItem('time_log') || 'null'),
         timeHistory: JSON.parse(localStorage.getItem('time_history') || 'null'),
         deepThoughts: JSON.parse(localStorage.getItem('deep_thoughts') || 'null'),
+        deepReview: JSON.parse(localStorage.getItem('deep_review') || 'null'),
         dailyInsights: JSON.parse(localStorage.getItem('daily_insights') || 'null'),
         lifeAnalysis: JSON.parse(localStorage.getItem('life_analysis') || 'null'),
         reflections: JSON.parse(localStorage.getItem('daily_reflections') || 'null'),
@@ -367,6 +369,7 @@ Licensed under GNU Affero General Public License v3.0
       const tasksData = JSON.parse(localStorage.getItem('daily_tasks') || 'null');
       const timeHistory = JSON.parse(localStorage.getItem('time_history') || '[]');
       const deepThoughts = JSON.parse(localStorage.getItem('deep_thoughts') || '[]');
+      const deepReview = JSON.parse(localStorage.getItem('deep_review') || '[]');
       const dailyInsights = JSON.parse(localStorage.getItem('daily_insights') || '[]');
       const lifeAnalysis = JSON.parse(localStorage.getItem('life_analysis') || '[]');
       const reflections = JSON.parse(localStorage.getItem('daily_reflections') || '[]');
@@ -425,8 +428,8 @@ Licensed under GNU Affero General Public License v3.0
         text += '\n';
       }
 
-      // 深度思考（新四问）
-      text += '【深度思考·4问】\n';
+      // 常规深度思考（今日复盘内）
+      text += '【常规复盘·深度思考4问】\n';
       if (deepThoughts.length === 0) {
         text += '（无记录）\n\n';
       } else {
@@ -437,6 +440,25 @@ Licensed under GNU Affero General Public License v3.0
           '4. 下次再遇到，我可以怎么调整预设？'
         ];
         deepThoughts.forEach(entry => {
+          text += `\n📅 ${entry.date}\n`;
+          entry.answers.forEach((ans, i) => {
+            text += `${qs[i] || `问题${i+1}`}\n  ${ans || '（未填写）'}\n\n`;
+          });
+        });
+      }
+
+      // 深度复盘（主界面按钮）
+      text += '【深度复盘·本质与终局4问】\n';
+      if (deepReview.length === 0) {
+        text += '（无记录）\n\n';
+      } else {
+        const qs = [
+          '1. 这件事的本质是什么？',
+          '2. 这件事有没有长期价值？',
+          '3. 这件事的终局是什么？',
+          '4. 有没有反例？运用的边界是什么？'
+        ];
+        deepReview.forEach(entry => {
           text += `\n📅 ${entry.date}\n`;
           entry.answers.forEach((ans, i) => {
             text += `${qs[i] || `问题${i+1}`}\n  ${ans || '（未填写）'}\n\n`;
@@ -543,6 +565,8 @@ Licensed under GNU Affero General Public License v3.0
           else localStorage.removeItem('time_history');
           if (data.deepThoughts) localStorage.setItem('deep_thoughts', JSON.stringify(data.deepThoughts));
           else localStorage.removeItem('deep_thoughts');
+          if (data.deepReview) localStorage.setItem('deep_review', JSON.stringify(data.deepReview));
+          else localStorage.removeItem('deep_review');
           if (data.dailyInsights) localStorage.setItem('daily_insights', JSON.stringify(data.dailyInsights));
           else localStorage.removeItem('daily_insights');
           if (data.lifeAnalysis) localStorage.setItem('life_analysis', JSON.stringify(data.lifeAnalysis));
@@ -623,12 +647,14 @@ Licensed under GNU Affero General Public License v3.0
         document.querySelectorAll('.delete-log').forEach(btn => btn.disabled = true);
 
         let html = '';
-        if (getDeepThought(currentViewDate)) html += `<button class="view-deep-btn" id="viewDeepHistoryBtn">📖 深度思考</button>`;
+        if (getDeepThought(currentViewDate)) html += `<button class="view-deep-btn" id="viewDeepHistoryBtn">📖 常规复盘</button>`;
+        if (getDeepReview(currentViewDate)) html += `<button class="view-deep-btn" id="viewDeepReviewHistoryBtn" style="background:#e17055;">🧠 深度复盘</button>`;
         if (getDailyInsight(currentViewDate)) html += `<button class="view-insight-btn" id="viewInsightHistoryBtn">💬 今日感悟</button>`;
         if (getLifeAnalysis(currentViewDate)) html += `<button class="view-deep-btn" id="viewLifeAnalysisHistoryBtn" style="background:#e17055;">🔍 生活难题分析</button>`;
         if (getDailyQuestionsForDate(currentViewDate)) html += `<button class="view-question-btn" id="viewQuestionHistoryBtn">📝 今日问题</button>`;
         viewDeepBtnContainer.innerHTML = html;
         if (document.getElementById('viewDeepHistoryBtn')) document.getElementById('viewDeepHistoryBtn').addEventListener('click', () => showDeepThoughtModal(currentViewDate, true));
+        if (document.getElementById('viewDeepReviewHistoryBtn')) document.getElementById('viewDeepReviewHistoryBtn').addEventListener('click', () => showDeepReviewModal(currentViewDate, true));
         if (document.getElementById('viewInsightHistoryBtn')) document.getElementById('viewInsightHistoryBtn').addEventListener('click', () => showInsightModal(currentViewDate, true));
         if (document.getElementById('viewLifeAnalysisHistoryBtn')) document.getElementById('viewLifeAnalysisHistoryBtn').addEventListener('click', () => showLifeAnalysisModal(currentViewDate, true));
         if (document.getElementById('viewQuestionHistoryBtn')) document.getElementById('viewQuestionHistoryBtn').addEventListener('click', () => showQuestionModal(currentViewDate, true));
@@ -668,7 +694,7 @@ Licensed under GNU Affero General Public License v3.0
         }
       }
     }
-    // ★★★ 已移除2小时任务提醒功能，只保留晚上10:30提醒 ★★★
+    // 已移除2小时任务提醒功能，只保留晚上10:30提醒
     function runReminders() { checkEveningReminder(); }
 
     // ========== 夸夸语库 ==========
@@ -710,7 +736,7 @@ Licensed under GNU Affero General Public License v3.0
     if (shouldShowDailyPraise()) setTimeout(showDailyModal, 600);
     document.getElementById('showDailyBtn').addEventListener('click', showDailyModal);
 
-    // ========== 深度思考模块（新四问） ==========
+    // ========== 常规深度思考模块（今日复盘内使用） ==========
     const DEEP_THINK_KEY = 'deep_thoughts';
     function getDeepThought(dateStr) {
       const stored = localStorage.getItem(DEEP_THINK_KEY);
@@ -727,7 +753,7 @@ Licensed under GNU Affero General Public License v3.0
     function showDeepThoughtModal(dateStr, readOnly = false) {
       const deepData = getDeepThought(dateStr);
       const answers = deepData ? deepData.answers : ['', '', '', ''];
-      // ★★★ 新四问 ★★★
+      // 常规复盘问题
       const questions = [
         { label: '1. 今天事情做完和没做完的原因是什么？有什么可以去迭代的地方？', hint: '回顾今天的完成情况，分析原因，找到改进点。' },
         { label: '2. 今天哪件事，我的预判和实际结果不一样？', hint: '找出预期与现实的差距，看到认知的盲区。' },
@@ -737,21 +763,63 @@ Licensed under GNU Affero General Public License v3.0
       const modal = document.createElement('div'); modal.className = 'modal';
       let html = '';
       questions.forEach((q, i) => { html += `<div class="deep-question-area"><label>${q.label}</label><textarea id="deepAnswer${i}" rows="3" placeholder="${q.hint}" ${readOnly ? 'readonly' : ''}>${escapeHtml(answers[i] || '')}</textarea></div>`; });
-      modal.innerHTML = `<div class="modal-content" style="max-width:420px;"><div class="modal-emoji">🧠</div><div style="font-weight:bold;">深度思考·每日4问</div><div style="color:#888;font-size:0.85rem;margin-bottom:10px;">${dateStr}</div>${html}${readOnly ? '' : '<button id="saveDeepBtn" class="close-modal" style="background:#e17055;">💾 保存思考</button>'}<button class="close-modal" style="margin-top:8px;">${readOnly ? '返回' : '取消'}</button></div>`;
+      modal.innerHTML = `<div class="modal-content" style="max-width:420px;"><div class="modal-emoji">📝</div><div style="font-weight:bold;">常规复盘·深度思考4问</div><div style="color:#888;font-size:0.85rem;margin-bottom:10px;">${dateStr}</div>${html}${readOnly ? '' : '<button id="saveDeepBtn" class="close-modal" style="background:#e17055;">💾 保存思考</button>'}<button class="close-modal" style="margin-top:8px;">${readOnly ? '返回' : '取消'}</button></div>`;
       document.body.appendChild(modal);
       if (!readOnly) {
         modal.querySelector('#saveDeepBtn').addEventListener('click', () => {
           const newAnswers = [0,1,2,3].map(i => document.getElementById(`deepAnswer${i}`).value.trim());
           saveDeepThought(dateStr, newAnswers);
           modal.remove();
-          showSimpleModal('🌟', '思考已保存。这些深度自省，会让你走得更清晰。');
+          showSimpleModal('🌟', '常规复盘已保存。');
         });
       }
       modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => modal.remove()));
     }
-    document.getElementById('deepThinkBtn').addEventListener('click', () => {
-      if (currentViewDate !== getTodayStr()) { alert('只能对今天进行深度思考。'); return; }
-      showDeepThoughtModal(getTodayStr(), false);
+
+    // ========== ★★★ 深度复盘模块（主界面按钮，独立存储） ★★★ ==========
+    const DEEP_REVIEW_KEY = 'deep_review';
+    function getDeepReview(dateStr) {
+      const stored = localStorage.getItem(DEEP_REVIEW_KEY);
+      if (!stored) return null;
+      try { const data = JSON.parse(stored); return data.find(d => d.date === dateStr) || null; } catch(e) { return null; }
+    }
+    function saveDeepReview(dateStr, answers) {
+      const stored = localStorage.getItem(DEEP_REVIEW_KEY);
+      let data = stored ? JSON.parse(stored) : [];
+      const idx = data.findIndex(d => d.date === dateStr);
+      if (idx >= 0) data[idx].answers = answers; else data.push({ date: dateStr, answers });
+      localStorage.setItem(DEEP_REVIEW_KEY, JSON.stringify(data));
+    }
+    function showDeepReviewModal(dateStr, readOnly = false) {
+      const deepData = getDeepReview(dateStr);
+      const answers = deepData ? deepData.answers : ['', '', '', ''];
+      // 深度复盘新问题
+      const questions = [
+        { label: '1. 这件事的本质是什么？', hint: '剥开表象，看到最核心的问题或原理。' },
+        { label: '2. 这件事有没有长期价值？', hint: '放到5年、10年来看，它是否依然重要？' },
+        { label: '3. 这件事的终局是什么？', hint: '如果完全按预期发展，最终会通向哪里？' },
+        { label: '4. 有没有反例？运用的边界是什么？', hint: '在什么条件下它会失效？适用范围在哪？' }
+      ];
+      const modal = document.createElement('div'); modal.className = 'modal';
+      let html = '';
+      questions.forEach((q, i) => { html += `<div class="deep-question-area"><label>${q.label}</label><textarea id="deepReviewAnswer${i}" rows="3" placeholder="${q.hint}" ${readOnly ? 'readonly' : ''}>${escapeHtml(answers[i] || '')}</textarea></div>`; });
+      modal.innerHTML = `<div class="modal-content" style="max-width:420px;"><div class="modal-emoji">🧠</div><div style="font-weight:bold;">深度复盘·本质与终局4问</div><div style="color:#888;font-size:0.85rem;margin-bottom:10px;">${dateStr}</div>${html}${readOnly ? '' : '<button id="saveDeepReviewBtn" class="close-modal" style="background:#e17055;">💾 保存复盘</button>'}<button class="close-modal" style="margin-top:8px;">${readOnly ? '返回' : '取消'}</button></div>`;
+      document.body.appendChild(modal);
+      if (!readOnly) {
+        modal.querySelector('#saveDeepReviewBtn').addEventListener('click', () => {
+          const newAnswers = [0,1,2,3].map(i => document.getElementById(`deepReviewAnswer${i}`).value.trim());
+          saveDeepReview(dateStr, newAnswers);
+          modal.remove();
+          showSimpleModal('🌟', '深度复盘已保存。这些思考会帮你看到更底层的逻辑。');
+        });
+      }
+      modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => modal.remove()));
+    }
+
+    // 绑定“深度复盘”按钮事件
+    document.getElementById('deepReviewBtn').addEventListener('click', () => {
+      if (currentViewDate !== getTodayStr()) { alert('只能对今天进行深度复盘。'); return; }
+      showDeepReviewModal(getTodayStr(), false);
     });
 
     // ========== 每日感悟模块（含应用场景） ==========
@@ -839,7 +907,7 @@ Licensed under GNU Affero General Public License v3.0
       modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => modal.remove()));
     }
 
-    // ========== ★★★ 今日问题栏（新增） ★★★ ==========
+    // ========== 今日问题栏 ==========
     const QUESTION_KEY = 'daily_questions';
 
     function getDailyQuestionsForDate(dateStr) {
@@ -1205,7 +1273,7 @@ Licensed under GNU Affero General Public License v3.0
         statsHtml += `<div class="stat-bar"><span class="emoji">${cat.emoji}</span><span style="width:40px;font-size:0.8rem;">${formatDuration(sec)}</span><div class="bar-bg"><div class="bar-fill" style="width:${percent}%;background:${cat.color};"></div></div></div>`;
       });
       const modal = document.createElement('div'); modal.className = 'modal';
-      modal.innerHTML = `<div class="modal-content" style="max-width:360px;"><div class="modal-emoji">📊</div><div class="modal-text">${praise}</div><div class="time-stats">${statsHtml}</div><button id="goDeepThinkBtn" class="close-modal" style="background:#e17055;margin-top:5px;">📝 深度思考·4问</button><button id="goInsightBtn" class="close-modal" style="background:#82ccdd;margin-top:5px;">💬 今日感悟</button><button id="goQuestionBtn" class="close-modal" style="background:#fd79a8;margin-top:5px;">📝 今日问题</button><button class="close-modal">好的，继续加油 💪</button></div>`;
+      modal.innerHTML = `<div class="modal-content" style="max-width:360px;"><div class="modal-emoji">📊</div><div class="modal-text">${praise}</div><div class="time-stats">${statsHtml}</div><button id="goDeepThinkBtn" class="close-modal" style="background:#e17055;margin-top:5px;">📝 常规复盘·深度思考4问</button><button id="goInsightBtn" class="close-modal" style="background:#82ccdd;margin-top:5px;">💬 今日感悟</button><button id="goQuestionBtn" class="close-modal" style="background:#fd79a8;margin-top:5px;">📝 今日问题</button><button class="close-modal">好的，继续加油 💪</button></div>`;
       document.body.appendChild(modal);
       modal.querySelector('#goDeepThinkBtn').addEventListener('click', () => { modal.remove(); showDeepThoughtModal(getTodayStr(), false); });
       modal.querySelector('#goInsightBtn').addEventListener('click', () => { modal.remove(); showInsightModal(getTodayStr(), false); });
